@@ -23,7 +23,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -167,7 +166,7 @@ private fun startTextRecognition(
                     Log.w("Test", "Cords: " + event.x.toString() + ", " + event.y.toString())
                         for (text in getTextRectList()) {
                             Log.w("Test", "Box: (x | y)" + text.rect.left.toString() + ", " + text.rect.right.toString() + " | " + text.rect.top.toString() + ", " + text.rect.bottom.toString())
-                            if (text.rect.contains(Offset(event.x / 2.8f, event.y / 2.5f))) {
+                            if (contains(text.rect, event.x, event.y)) {
                                 // TODO: Text to Speech the text here
                                 Log.w("Test", "the text: " + text.text)
                             }
@@ -246,6 +245,6 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
     updateRectTextList(updatedTextRects)
 }
 
-private fun contains(rect: Rect, x: Int, y: Int) {
-    //TODO: Implement which rectangle corresponds to touch
+private fun contains(rect: Rect, x: Float, y: Float): Boolean {
+    return rect.left - 100 <= x && rect.right + 100 >= x && rect.top - 100 <= y && rect.bottom + 100 >= y
 }
