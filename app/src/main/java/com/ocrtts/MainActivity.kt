@@ -1,4 +1,4 @@
-package de.yanneckreiss.mlkittutorial
+package com.ocrtts
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import de.yanneckreiss.mlkittutorial.ui.MainScreen
-import de.yanneckreiss.mlkittutorial.ui.theme.JetpackComposeMLKitTutorialTheme
+import com.ocrtts.ui.MainScreen
+import com.ocrtts.ui.theme.JetpackComposeMLKitTutorialTheme
 
 class MainActivity : ComponentActivity() {
 

@@ -1,15 +1,14 @@
 @file:OptIn(ExperimentalPermissionsApi::class)
 
-package de.yanneckreiss.mlkittutorial.ui
+package com.ocrtts.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import de.yanneckreiss.mlkittutorial.ui.camera.CameraScreen
-import de.yanneckreiss.mlkittutorial.ui.no_permission.NoPermissionScreen
+import com.ocrtts.ui.camera.CameraScreen
+import com.ocrtts.ui.no_permission.NoPermissionScreen
 
 @Composable
 fun MainScreen() {

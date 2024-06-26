@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'de.yanneckreiss.cameraxtutorial'
+    namespace 'com.ocrtts'
     compileSdk 34
 
     defaultConfig {
-        applicationId "de.yanneckreiss.cameraxtutorial"
+        applicationId "com.ocrtts"
         minSdk 28
         targetSdk 34
         versionCode 1

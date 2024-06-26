@@ -1,4 +1,4 @@
-package de.yanneckreiss.mlkittutorial.ui.camera
+package com.ocrtts.ui.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -33,7 +33,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mlkit.vision.text.Text
-import de.yanneckreiss.cameraxtutorial.R
+import com.ocrtts.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -193,12 +193,14 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
             for (text in textBlocks) {
                 if (text.boundingBox != null) {
                     val textBlock = text.boundingBox!!
-                    updatedTextRects.add(TextRect(text.text, Rect(
+                    updatedTextRects.add(
+                        TextRect(text.text, Rect(
                         top = textBlock.top.toFloat() * 2.25f,
                         bottom = textBlock.bottom.toFloat() * 2.325f,
                         right = textBlock.right.toFloat() * 2.3f,
                         left = textBlock.left.toFloat() * 2.1f
-                    )))
+                    ))
+                    )
                 }
             }
         }
@@ -206,12 +208,14 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
             for (text in textBlocks) {
                 if (text.boundingBox != null) {
                     val textBlock = text.boundingBox!!
-                    updatedTextRects.add(TextRect(text.text, Rect(
+                    updatedTextRects.add(
+                        TextRect(text.text, Rect(
                         top = textBlock.top.toFloat() * 2.25f,
                         bottom = textBlock.bottom.toFloat() * 2.275f,
                         right = textBlock.right.toFloat() * 2.3f,
                         left = textBlock.left.toFloat() * 2.025f
-                    )))
+                    ))
+                    )
                 }
             }
         }
@@ -219,12 +223,14 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
             for (text in textBlocks) {
                 if (text.boundingBox != null) {
                     val textBlock = text.boundingBox!!
-                    updatedTextRects.add(TextRect(text.text, Rect(
+                    updatedTextRects.add(
+                        TextRect(text.text, Rect(
                         top = textBlock.top.toFloat() * 2.225f,
                         bottom = textBlock.bottom.toFloat() * 2.275f,
                         right = textBlock.right.toFloat() * 2.3f,
                         left = textBlock.left.toFloat() * 2.2f
-                    )))
+                    ))
+                    )
                 }
             }
         }
@@ -232,12 +238,14 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
             for (text in textBlocks) {
                 if (text.boundingBox != null) {
                     val textBlock = text.boundingBox!!
-                    updatedTextRects.add(TextRect(text.text, Rect(
+                    updatedTextRects.add(
+                        TextRect(text.text, Rect(
                         top = textBlock.top.toFloat() * 2.2f,
                         bottom = textBlock.bottom.toFloat() * 2.25f,
                         right = textBlock.right.toFloat() * 2.25f,
                         left = textBlock.left.toFloat() * 1.85f
-                    )))
+                    ))
+                    )
                 }
             }
         }

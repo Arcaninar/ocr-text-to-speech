@@ -1,4 +1,4 @@
-package de.yanneckreiss.mlkittutorial.ui.camera
+package com.ocrtts.ui.camera
 
 import android.media.Image
 import androidx.annotation.OptIn
@@ -17,7 +17,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.reflect.KFunction1
 
 class TextRecognitionAnalyzer(
     private val onDetectedTextUpdated: (Text, Int) -> Unit
