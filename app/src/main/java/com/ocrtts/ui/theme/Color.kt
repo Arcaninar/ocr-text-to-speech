@@ -1,4 +1,4 @@
-package de.yanneckreiss.mlkittutorial.ui.theme
+package com.ocrtts.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

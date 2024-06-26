@@ -1,4 +1,4 @@
-package de.yanneckreiss.mlkittutorial.ui.no_permission
+package com.ocrtts.ui.no_permission
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,10 +29,11 @@ fun NoPermissionScreen(
 
 @Composable
 fun NoPermissionContent(
-    onRequestPermission: () -> Unit
+    onRequestPermission: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(

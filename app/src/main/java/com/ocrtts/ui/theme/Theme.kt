@@ -1,4 +1,4 @@
-package de.yanneckreiss.mlkittutorial.ui.theme
+package com.ocrtts.ui.theme
 
 import android.app.Activity
 import android.os.Build
