@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ocrtts.ui.MainScreen
-import com.ocrtts.ui.camera.CameraScreenViewModel
 import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,7 +16,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val viewModel: CameraScreenViewModel = viewModel()
             OCRTextToSpeechTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
