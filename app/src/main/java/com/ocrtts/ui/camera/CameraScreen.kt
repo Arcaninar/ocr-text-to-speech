@@ -18,10 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -38,10 +34,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 data class TextRect(
-    val text: String,
-    val rect: Rect
+    val text: String = "",
+    var rect: Rect = Rect(0f, 0f, 0f, 0f)
 )
 
 @Composable
@@ -50,31 +47,21 @@ fun CameraScreen() {
 }
 
 @Composable
-private fun CameraContent() {
-    val context: Context = LocalContext.current
+private fun CameraContent(viewModel: CameraScreenViewModel = viewModel()) {
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
-    val cameraController: LifecycleCameraController = remember { LifecycleCameraController(context) }
-    var textRectList: List<TextRect> by remember { mutableStateOf(listOf()) }
-    var previousHasText: Boolean = remember { false }
+    val cameraController = LifecycleCameraController(LocalContext.current)
     val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
 
-    var longTouchCounter: Int = remember { 0 }
-
-    fun getLongTouch(): Int {return longTouchCounter}
-    fun incrementLongTouch() { longTouchCounter += 1 }
-    fun getTextRectList(): List<TextRect> {return textRectList}
-    fun setTextRectList(list: List<TextRect>) { textRectList = list }
-
     fun onTextUpdated(updatedText: Text, rotation: Int) {
-        rotate(updatedText.textBlocks, rotation, ::setTextRectList)
+        rotate(updatedText.textBlocks, rotation, viewModel::setTextRectList)
         if (updatedText.text.isNotBlank()) {
-            if (!previousHasText) {
+            if (!viewModel.previousHasText.value) {
                 audio.start()
-                previousHasText = true
+                viewModel.setPreviousHasText(true)
             }
         }
         else {
-            previousHasText = false
+            viewModel.setPreviousHasText(false)
         }
     }
 
@@ -99,32 +86,32 @@ private fun CameraContent() {
                 }.also { previewView ->
                     startTextRecognition(
                         context = context,
-                        cameraController = cameraController,
                         lifecycleOwner = lifecycleOwner,
+                        cameraController = cameraController,
                         previewView = previewView,
                         onDetectedTextUpdated = ::onTextUpdated,
-                        ::getLongTouch,
-                        ::incrementLongTouch,
-                        ::getTextRectList
+                        viewModel = viewModel
                     )
                 }
             }
         )
 
-        if (textRectList.isNotEmpty()) {
+        val textRectSelected = viewModel.textRectSelected.value
+
+        if (textRectSelected != null) {
             Canvas(modifier = Modifier.fillMaxSize()) {
-                for (text in textRectList) {
-                    val box = text.rect
-                    val path = Path().apply {
-                        addRect(rect = Rect(
+                val box = textRectSelected.rect
+                val path = Path().apply {
+                    addRect(
+                        rect = Rect(
                             left = box.left,
                             right = box.right,
                             top = box.top,
-                            bottom = box.bottom)
+                            bottom = box.bottom
                         )
-                    }
-                    drawPath(path, color = Color.Red, style = Stroke(width = 5f))
+                    )
                 }
+                drawPath(path, color = Color.Red, style = Stroke(width = 5f))
             }
         }
     }
@@ -134,13 +121,11 @@ private fun CameraContent() {
 @SuppressLint("ClickableViewAccessibility")
 private fun startTextRecognition(
     context: Context,
-    cameraController: LifecycleCameraController,
     lifecycleOwner: LifecycleOwner,
+    cameraController: LifecycleCameraController,
     previewView: PreviewView,
     onDetectedTextUpdated: (Text, Int) -> Unit,
-    getLongTouch: () -> Int,
-    incrementLongTouch: () -> Unit,
-    getTextRectList: () -> List<TextRect>,
+    viewModel: CameraScreenViewModel
 ) {
 
     cameraController.imageAnalysisTargetSize = CameraController.OutputSize(AspectRatio.RATIO_16_9)
@@ -158,13 +143,19 @@ private fun startTextRecognition(
     previewView.setOnTouchListener { v, event ->
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
-                val localCounter = getLongTouch()
+                val localCounter = viewModel.longTouchCounter.value
+
+                for (text in viewModel.textRectList.value) {
+                    if (contains(text.rect, event.x, event.y)) {
+                        viewModel.setTextRectSelected(text)
+                    }
+                }
 
                 CoroutineScope(Dispatchers.Main).launch {
                     delay(2000L)
-                    if (localCounter == getLongTouch()) {
+                    if (localCounter == viewModel.longTouchCounter.value) {
                     Log.w("Test", "Cords: " + event.x.toString() + ", " + event.y.toString())
-                        for (text in getTextRectList()) {
+                        for (text in viewModel.textRectList.value) {
                             Log.w("Test", "Box: (x | y)" + text.rect.left.toString() + ", " + text.rect.right.toString() + " | " + text.rect.top.toString() + ", " + text.rect.bottom.toString())
                             if (contains(text.rect, event.x, event.y)) {
                                 // TODO: Text to Speech the text here
@@ -176,7 +167,7 @@ private fun startTextRecognition(
             }
 
             MotionEvent.ACTION_UP -> {
-                incrementLongTouch()
+                viewModel.incrementLongTouch()
             }
         }
 
@@ -254,5 +245,5 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
 }
 
 private fun contains(rect: Rect, x: Float, y: Float): Boolean {
-    return rect.left - 100 <= x && rect.right + 100 >= x && rect.top - 100 <= y && rect.bottom + 100 >= y
+    return rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y
 }

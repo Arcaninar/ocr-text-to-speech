@@ -8,14 +8,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.ocrtts.ui.MainScreen
-import com.ocrtts.ui.theme.JetpackComposeMLKitTutorialTheme
+import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
-            JetpackComposeMLKitTutorialTheme {
+            OCRTextToSpeechTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
