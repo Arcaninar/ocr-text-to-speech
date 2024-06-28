@@ -4,37 +4,45 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
-import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.annotation.OptIn
 import androidx.camera.core.AspectRatio
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageProxy
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Scaffold
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mlkit.vision.text.Text
 import com.ocrtts.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.ocrtts.ui.MainViewModel
 
 data class TextRect(
     val text: String = "",
@@ -42,12 +50,8 @@ data class TextRect(
 )
 
 @Composable
-fun CameraScreen() {
-    CameraContent()
-}
-
-@Composable
-private fun CameraContent(viewModel: CameraScreenViewModel = viewModel()) {
+fun CameraScreen(viewModel: MainViewModel, modifier: Modifier = Modifier, navigate: () -> Unit) {
+    var currentContext = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
     val cameraController = LifecycleCameraController(LocalContext.current)
     val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
@@ -66,55 +70,93 @@ private fun CameraContent(viewModel: CameraScreenViewModel = viewModel()) {
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) { paddingValues: PaddingValues ->
-        AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .clickable { Log.w("Test", "Test") },
-            factory = { context ->
-                PreviewView(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setBackgroundColor(Color.hashCode())
-                    implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                    scaleType = PreviewView.ScaleType.FILL_START
-
-                }.also { previewView ->
-                    startTextRecognition(
-                        context = context,
-                        lifecycleOwner = lifecycleOwner,
-                        cameraController = cameraController,
-                        previewView = previewView,
-                        onDetectedTextUpdated = ::onTextUpdated,
-                        viewModel = viewModel
-                    )
-                }
-            }
-        )
-
-        val textRectSelected = viewModel.textRectSelected.value
-
-        if (textRectSelected != null) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val box = textRectSelected.rect
-                val path = Path().apply {
-                    addRect(
-                        rect = Rect(
-                            left = box.left,
-                            right = box.right,
-                            top = box.top,
-                            bottom = box.bottom
+        Box(contentAlignment = Alignment.BottomEnd) {
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .clickable { Log.w("Test", "Test") },
+                factory = { context ->
+                    currentContext = context
+                    PreviewView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
                         )
-                    )
+                        setBackgroundColor(Color.hashCode())
+                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        scaleType = PreviewView.ScaleType.FILL_START
+
+                    }.also { previewView ->
+                        startTextRecognition(
+                            context = context,
+                            lifecycleOwner = lifecycleOwner,
+                            cameraController = cameraController,
+                            previewView = previewView,
+                            onDetectedTextUpdated = ::onTextUpdated,
+                            viewModel = viewModel
+                        )
+                    }
                 }
-                drawPath(path, color = Color.Red, style = Stroke(width = 5f))
+            )
+
+            if (viewModel.textRectList.value.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier
+                    .offset(y = (-20).dp)
+                    .fillMaxWidth()) {
+                    Text(text = "There is a text in front of you. Click the button below to view it",
+                        modifier = Modifier
+                            .background(Color.Yellow, RoundedCornerShape(50))
+                            .padding(5.dp)
+                            .fillMaxWidth(0.8f)
+                    )
+                    Button(
+                        onClick = {
+                            onClickButton(context = currentContext, cameraController = cameraController, viewModel, navigate)
+                        }) {
+                        CircleShape
+                    }
+                }
             }
         }
+
+//        val textRectSelected = viewModel.textRectSelected.value
+
+//        if (textRectSelected != null) {
+//            Canvas(modifier = Modifier.fillMaxSize()) {
+//                val box = textRectSelected.rect
+//                val path = Path().apply {
+//                    addRect(
+//                        rect = Rect(
+//                            left = box.left,
+//                            right = box.right,
+//                            top = box.top,
+//                            bottom = box.bottom
+//                        )
+//                    )
+//                }
+//                drawPath(path, color = Color.Red, style = Stroke(width = 5f))
+//            }
+//        }
     }
+}
+
+private fun onClickButton(context: Context, cameraController: LifecycleCameraController, viewModel: MainViewModel, navigate: () -> Unit) {
+    cameraController.takePicture(
+        ContextCompat.getMainExecutor(context),
+        object: ImageCapture.OnImageCapturedCallback() {
+            @OptIn(ExperimentalGetImage::class)
+            override fun onCaptureSuccess(image: ImageProxy) {
+                super.onCaptureSuccess(image)
+                if (image.image != null) {
+                    viewModel.setImageSelected(image.image)
+                    navigate()
+                }
+            }
+        }
+    )
 }
 
 
@@ -125,7 +167,7 @@ private fun startTextRecognition(
     cameraController: LifecycleCameraController,
     previewView: PreviewView,
     onDetectedTextUpdated: (Text, Int) -> Unit,
-    viewModel: CameraScreenViewModel
+    viewModel: MainViewModel
 ) {
 
     cameraController.imageAnalysisTargetSize = CameraController.OutputSize(AspectRatio.RATIO_16_9)
@@ -140,39 +182,50 @@ private fun startTextRecognition(
     previewView.isClickable = true
 
     // custom LongTouchListener
-    previewView.setOnTouchListener { v, event ->
-        when (event?.action) {
-            MotionEvent.ACTION_DOWN -> {
-                val localCounter = viewModel.longTouchCounter.value
-
-                for (text in viewModel.textRectList.value) {
-                    if (contains(text.rect, event.x, event.y)) {
-                        viewModel.setTextRectSelected(text)
-                    }
-                }
-
-                CoroutineScope(Dispatchers.Main).launch {
-                    delay(2000L)
-                    if (localCounter == viewModel.longTouchCounter.value) {
-                    Log.w("Test", "Cords: " + event.x.toString() + ", " + event.y.toString())
-                        for (text in viewModel.textRectList.value) {
-                            Log.w("Test", "Box: (x | y)" + text.rect.left.toString() + ", " + text.rect.right.toString() + " | " + text.rect.top.toString() + ", " + text.rect.bottom.toString())
-                            if (contains(text.rect, event.x, event.y)) {
-                                // TODO: Text to Speech the text here
-                                Log.w("Test", "the text: " + text.text)
-                            }
-                        }
-                    }
-                }
-            }
-
-            MotionEvent.ACTION_UP -> {
-                viewModel.incrementLongTouch()
-            }
-        }
-
-        v?.onTouchEvent(event) ?: true
-    }
+//    previewView.setOnTouchListener { v, event ->
+//        when (event?.action) {
+//            MotionEvent.ACTION_DOWN -> {
+//                val localCounter = viewModel.longTouchCounter.value
+//
+//                if (viewModel.textRectList.value.isNotEmpty()) {
+//                    cameraController.takePicture(
+//                        ContextCompat.getMainExecutor(context),
+//                        object: ImageCapture.OnImageCapturedCallback() {
+//                            override fun onCaptureSuccess(image: ImageProxy) {
+//                                super.onCaptureSuccess(image)
+//                            }
+//                        }
+//                    )
+//                }
+//
+////                for (text in viewModel.textRectList.value) {
+////                    if (contains(text.rect, event.x, event.y)) {
+////                        viewModel.setTextRectSelected(text)
+////                    }
+////                }
+//
+//                CoroutineScope(Dispatchers.Main).launch {
+//                    delay(2000L)
+//                    if (localCounter == viewModel.longTouchCounter.value) {
+//                    Log.w("Test", "Cords: " + event.x.toString() + ", " + event.y.toString())
+//                        for (text in viewModel.textRectList.value) {
+//                            Log.w("Test", "Box: (x | y)" + text.rect.left.toString() + ", " + text.rect.right.toString() + " | " + text.rect.top.toString() + ", " + text.rect.bottom.toString())
+//                            if (contains(text.rect, event.x, event.y)) {
+//                                // TODO: Text to Speech the text here
+//                                Log.w("Test", "the text: " + text.text)
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            MotionEvent.ACTION_UP -> {
+//                viewModel.incrementLongTouch()
+//            }
+//        }
+//
+//        v?.onTouchEvent(event) ?: true
+//    }
 }
 
 fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: (List<TextRect>) -> Unit) {
