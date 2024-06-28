@@ -24,7 +24,7 @@ fun MainScreen() {
 @Composable
 private fun MainContent(
     hasPermission: Boolean,
-    onRequestPermission: () -> Unit
+    onRequestPermission: () -> Unit,
 ) {
 
     if (hasPermission) {
