@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.ocrtts.ui.MainScreen
+import com.ocrtts.ui.screens.MainScreen
 import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 
 class MainActivity : ComponentActivity() {

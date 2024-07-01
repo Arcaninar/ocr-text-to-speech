@@ -1,4 +1,4 @@
-package com.ocrtts.ui.selected_image
+package com.ocrtts.ui.screens
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
-import com.ocrtts.ui.MainViewModel
+import com.ocrtts.ui.viewmodels.MainViewModel
 
 
 @Composable
