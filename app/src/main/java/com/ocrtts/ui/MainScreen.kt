@@ -34,29 +34,28 @@ private fun MainContent(
     viewModel: MainViewModel = viewModel<MainViewModel>()
 ) {
     val navController = rememberNavController()
-    val startingScreen = if (hasPermission) Screens.CameraScreen else Screens.NoPermissionScreen
+    val startingScreen = if (hasPermission) "homeScreen" else "noPermissionScreen"
 
     NavHost(navController = navController, startDestination = startingScreen) {
-        composable<Screens.NoPermissionScreen>{
+        composable("noPermissionScreen") {
             NoPermissionScreen(onRequestPermission)
         }
 
-        composable<Screens.CameraScreen> {
+        composable("homeScreen") {
+            HomeScreen(viewModel, navController)
+        }
+
+        composable("cameraScreen") {
             CameraScreen(viewModel) {
-                navController.navigate(Screens.ImageScreen)
+                navController.navigate("imageScreen")
             }
         }
 
-        composable<Screens.ImageScreen> {
-            ImageScreen(viewModel) {
-                navController.navigate(Screens.CameraScreen)
-            }
+        composable("imageScreen") {
+            ImageScreen(viewModel, navController)
+        }
+        composable("historyScreen") {
+            HistoryScreen(navController)
         }
     }
-
-//    if (hasPermission) {
-//        CameraScreen()
-//    } else {
-//        NoPermissionScreen(onRequestPermission)
-//    }
 }

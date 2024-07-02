@@ -118,28 +118,11 @@ fun CameraScreen(viewModel: MainViewModel, modifier: Modifier = Modifier, naviga
                         }) {
                         CircleShape
                     }
+
                 }
             }
         }
 
-//        val textRectSelected = viewModel.textRectSelected.value
-
-//        if (textRectSelected != null) {
-//            Canvas(modifier = Modifier.fillMaxSize()) {
-//                val box = textRectSelected.rect
-//                val path = Path().apply {
-//                    addRect(
-//                        rect = Rect(
-//                            left = box.left,
-//                            right = box.right,
-//                            top = box.top,
-//                            bottom = box.bottom
-//                        )
-//                    )
-//                }
-//                drawPath(path, color = Color.Red, style = Stroke(width = 5f))
-//            }
-//        }
     }
 }
 
@@ -181,51 +164,6 @@ private fun startTextRecognition(
 
     previewView.isClickable = true
 
-    // custom LongTouchListener
-//    previewView.setOnTouchListener { v, event ->
-//        when (event?.action) {
-//            MotionEvent.ACTION_DOWN -> {
-//                val localCounter = viewModel.longTouchCounter.value
-//
-//                if (viewModel.textRectList.value.isNotEmpty()) {
-//                    cameraController.takePicture(
-//                        ContextCompat.getMainExecutor(context),
-//                        object: ImageCapture.OnImageCapturedCallback() {
-//                            override fun onCaptureSuccess(image: ImageProxy) {
-//                                super.onCaptureSuccess(image)
-//                            }
-//                        }
-//                    )
-//                }
-//
-////                for (text in viewModel.textRectList.value) {
-////                    if (contains(text.rect, event.x, event.y)) {
-////                        viewModel.setTextRectSelected(text)
-////                    }
-////                }
-//
-//                CoroutineScope(Dispatchers.Main).launch {
-//                    delay(2000L)
-//                    if (localCounter == viewModel.longTouchCounter.value) {
-//                    Log.w("Test", "Cords: " + event.x.toString() + ", " + event.y.toString())
-//                        for (text in viewModel.textRectList.value) {
-//                            Log.w("Test", "Box: (x | y)" + text.rect.left.toString() + ", " + text.rect.right.toString() + " | " + text.rect.top.toString() + ", " + text.rect.bottom.toString())
-//                            if (contains(text.rect, event.x, event.y)) {
-//                                // TODO: Text to Speech the text here
-//                                Log.w("Test", "the text: " + text.text)
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//
-//            MotionEvent.ACTION_UP -> {
-//                viewModel.incrementLongTouch()
-//            }
-//        }
-//
-//        v?.onTouchEvent(event) ?: true
-//    }
 }
 
 fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: (List<TextRect>) -> Unit) {
@@ -239,11 +177,11 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
                     val textBlock = text.boundingBox!!
                     updatedTextRects.add(
                         TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.25f,
-                        bottom = textBlock.bottom.toFloat() * 2.325f,
-                        right = textBlock.right.toFloat() * 2.3f,
-                        left = textBlock.left.toFloat() * 2.1f
-                    ))
+                            top = textBlock.top.toFloat() * 2.25f,
+                            bottom = textBlock.bottom.toFloat() * 2.325f,
+                            right = textBlock.right.toFloat() * 2.3f,
+                            left = textBlock.left.toFloat() * 2.1f
+                        ))
                     )
                 }
             }
@@ -254,11 +192,11 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
                     val textBlock = text.boundingBox!!
                     updatedTextRects.add(
                         TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.25f,
-                        bottom = textBlock.bottom.toFloat() * 2.275f,
-                        right = textBlock.right.toFloat() * 2.3f,
-                        left = textBlock.left.toFloat() * 2.025f
-                    ))
+                            top = textBlock.top.toFloat() * 2.25f,
+                            bottom = textBlock.bottom.toFloat() * 2.275f,
+                            right = textBlock.right.toFloat() * 2.3f,
+                            left = textBlock.left.toFloat() * 2.025f
+                        ))
                     )
                 }
             }
@@ -269,11 +207,11 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
                     val textBlock = text.boundingBox!!
                     updatedTextRects.add(
                         TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.225f,
-                        bottom = textBlock.bottom.toFloat() * 2.275f,
-                        right = textBlock.right.toFloat() * 2.3f,
-                        left = textBlock.left.toFloat() * 2.2f
-                    ))
+                            top = textBlock.top.toFloat() * 2.225f,
+                            bottom = textBlock.bottom.toFloat() * 2.275f,
+                            right = textBlock.right.toFloat() * 2.3f,
+                            left = textBlock.left.toFloat() * 2.2f
+                        ))
                     )
                 }
             }
@@ -284,11 +222,11 @@ fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: 
                     val textBlock = text.boundingBox!!
                     updatedTextRects.add(
                         TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.2f,
-                        bottom = textBlock.bottom.toFloat() * 2.25f,
-                        right = textBlock.right.toFloat() * 2.25f,
-                        left = textBlock.left.toFloat() * 1.85f
-                    ))
+                            top = textBlock.top.toFloat() * 2.2f,
+                            bottom = textBlock.bottom.toFloat() * 2.25f,
+                            right = textBlock.right.toFloat() * 2.25f,
+                            left = textBlock.left.toFloat() * 1.85f
+                        ))
                     )
                 }
             }
