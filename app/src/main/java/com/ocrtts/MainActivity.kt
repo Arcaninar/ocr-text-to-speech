@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.ocrtts.ui.MainScreen
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ocrtts.ui.screens.MainScreen
 import com.ocrtts.ui.theme.OCRTextToSpeechTheme
+import com.ocrtts.ui.viewmodels.PermissionViewModel
+import com.ocrtts.ui.viewmodels.PermissionViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
