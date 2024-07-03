@@ -7,23 +7,18 @@ import android.media.Image
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
-import androidx.camera.core.impl.utils.MatrixExt.postRotate
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -43,10 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ocrtts.R
 import com.ocrtts.camera.TextAnalyzer
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
@@ -56,8 +47,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 
 @OptIn(ExperimentalGetImage::class)
@@ -71,7 +60,7 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
             when (interaction) {
                 is PressInteraction.Press -> {
                     Log.w(TAG, "Pressed: " + viewModel.longTouchCounter.value)
-                    var isLongClick = viewModel.longTouchCounter.value
+                    val isLongClick = viewModel.longTouchCounter.value
 
                     val position = interaction.pressPosition
                     var hasText = false

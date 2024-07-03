@@ -15,14 +15,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.toRoute
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
-import com.ocrtts.ui.viewmodels.ImageViewModel
-import com.ocrtts.ui.viewmodels.CameraViewModel
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
