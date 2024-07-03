@@ -2,28 +2,22 @@ package com.ocrtts.ui.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.Image
 import android.media.MediaPlayer
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.annotation.OptIn
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.ExperimentalGetImage
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageProxy
+import androidx.camera.core.*
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Scaffold
@@ -32,39 +26,60 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.mlkit.vision.text.Text
 import com.ocrtts.R
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.ocrtts.ui.MainViewModel
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class TextRect(
     val text: String = "",
-    var rect: Rect = Rect(0f, 0f, 0f, 0f)
+    var rect: androidx.compose.ui.geometry.Rect = androidx.compose.ui.geometry.Rect(0f, 0f, 0f, 0f)
 )
 
 @Composable
-fun CameraScreen(viewModel: MainViewModel, modifier: Modifier = Modifier, navigate: () -> Unit) {
+fun CameraScreen(viewModel: MainViewModel, modifier: Modifier = Modifier, navigate: (fileName: String) -> Unit) {
     var currentContext = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
     val cameraController = LifecycleCameraController(LocalContext.current)
     val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
 
     fun onTextUpdated(updatedText: Text, rotation: Int) {
-        rotate(updatedText.textBlocks, rotation, viewModel::setTextRectList)
+        // 直接更新文本列表，不进行旋转操作
+        val textRects = updatedText.textBlocks.map { textBlock ->
+            val boundingBox = textBlock.boundingBox
+            if (boundingBox != null) {
+                TextRect(
+                    text = textBlock.text,
+                    rect = androidx.compose.ui.geometry.Rect(
+                        top = boundingBox.top.toFloat(),
+                        bottom = boundingBox.bottom.toFloat(),
+                        right = boundingBox.right.toFloat(),
+                        left = boundingBox.left.toFloat()
+                    )
+                )
+            } else {
+                TextRect()
+            }
+        }
+        viewModel.setTextRectList(textRects)
+
         if (updatedText.text.isNotBlank()) {
             if (!viewModel.previousHasText.value) {
                 audio.start()
                 viewModel.setPreviousHasText(true)
             }
-        }
-        else {
+        } else {
             viewModel.setPreviousHasText(false)
         }
     }
@@ -118,47 +133,83 @@ fun CameraScreen(viewModel: MainViewModel, modifier: Modifier = Modifier, naviga
                         }) {
                         CircleShape
                     }
+
                 }
             }
         }
 
-//        val textRectSelected = viewModel.textRectSelected.value
-
-//        if (textRectSelected != null) {
-//            Canvas(modifier = Modifier.fillMaxSize()) {
-//                val box = textRectSelected.rect
-//                val path = Path().apply {
-//                    addRect(
-//                        rect = Rect(
-//                            left = box.left,
-//                            right = box.right,
-//                            top = box.top,
-//                            bottom = box.bottom
-//                        )
-//                    )
-//                }
-//                drawPath(path, color = Color.Red, style = Stroke(width = 5f))
-//            }
-//        }
     }
 }
 
-private fun onClickButton(context: Context, cameraController: LifecycleCameraController, viewModel: MainViewModel, navigate: () -> Unit) {
+private fun onClickButton(context: Context, cameraController: LifecycleCameraController, viewModel: MainViewModel, navigate: (fileName: String) -> Unit) {
     cameraController.takePicture(
         ContextCompat.getMainExecutor(context),
-        object: ImageCapture.OnImageCapturedCallback() {
+        object : ImageCapture.OnImageCapturedCallback() {
             @OptIn(ExperimentalGetImage::class)
             override fun onCaptureSuccess(image: ImageProxy) {
-                super.onCaptureSuccess(image)
-                if (image.image != null) {
-                    viewModel.setImageSelected(image.image)
-                    navigate()
+                try {
+                    val bitmap = image.image?.let { convertImageToBitmap(it) }
+                    bitmap?.let {
+                        val filePath = saveBitmapToFile(context, it)
+                        saveFileNameToSharedPreferences(context, filePath)
+                        viewModel.setImageFilePath(filePath)
+                        navigate(filePath) // Navigate with file path
+                    }
+                } catch (e: IllegalStateException) {
+                    e.printStackTrace()
+                } finally {
+                    image.close() // Ensure ImageProxy is closed
                 }
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                super.onError(exception)
+                exception.printStackTrace()
             }
         }
     )
 }
 
+private fun convertImageToBitmap(image: Image): Bitmap? {
+    return try {
+        if (image.planes.isNotEmpty()) {
+            val buffer = image.planes[0].buffer
+            val bytes = ByteArray(buffer.remaining())
+            buffer.get(bytes)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } else {
+            null
+        }
+    } catch (e: IllegalStateException) {
+        e.printStackTrace()
+        null
+    }
+}
+
+private fun saveBitmapToFile(context: Context, bitmap: Bitmap): String {
+    val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+    val currentDateAndTime: String = sdf.format(Date())
+    val fileName = "IMG_$currentDateAndTime.jpg"
+
+    val file = File(context.filesDir, fileName)
+    FileOutputStream(file).use { out ->
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+    }
+
+    Log.d("CameraScreen", "Saved file to: ${file.absolutePath}") // Log the file path
+    return file.absolutePath // Return the absolute path of the file
+}
+
+private fun saveFileNameToSharedPreferences(context: Context, fileName: String) {
+    val sharedPreferences: SharedPreferences = context.getSharedPreferences("photo_history", Context.MODE_PRIVATE)
+    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+
+    val currentTime = System.currentTimeMillis()
+    editor.putString(currentTime.toString(), fileName)
+    editor.apply()
+
+    Log.d("CameraScreen", "Saved file path to SharedPreferences: $fileName at time $currentTime")
+}
 
 @SuppressLint("ClickableViewAccessibility")
 private fun startTextRecognition(
@@ -181,122 +232,4 @@ private fun startTextRecognition(
 
     previewView.isClickable = true
 
-    // custom LongTouchListener
-//    previewView.setOnTouchListener { v, event ->
-//        when (event?.action) {
-//            MotionEvent.ACTION_DOWN -> {
-//                val localCounter = viewModel.longTouchCounter.value
-//
-//                if (viewModel.textRectList.value.isNotEmpty()) {
-//                    cameraController.takePicture(
-//                        ContextCompat.getMainExecutor(context),
-//                        object: ImageCapture.OnImageCapturedCallback() {
-//                            override fun onCaptureSuccess(image: ImageProxy) {
-//                                super.onCaptureSuccess(image)
-//                            }
-//                        }
-//                    )
-//                }
-//
-////                for (text in viewModel.textRectList.value) {
-////                    if (contains(text.rect, event.x, event.y)) {
-////                        viewModel.setTextRectSelected(text)
-////                    }
-////                }
-//
-//                CoroutineScope(Dispatchers.Main).launch {
-//                    delay(2000L)
-//                    if (localCounter == viewModel.longTouchCounter.value) {
-//                    Log.w("Test", "Cords: " + event.x.toString() + ", " + event.y.toString())
-//                        for (text in viewModel.textRectList.value) {
-//                            Log.w("Test", "Box: (x | y)" + text.rect.left.toString() + ", " + text.rect.right.toString() + " | " + text.rect.top.toString() + ", " + text.rect.bottom.toString())
-//                            if (contains(text.rect, event.x, event.y)) {
-//                                // TODO: Text to Speech the text here
-//                                Log.w("Test", "the text: " + text.text)
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//
-//            MotionEvent.ACTION_UP -> {
-//                viewModel.incrementLongTouch()
-//            }
-//        }
-//
-//        v?.onTouchEvent(event) ?: true
-//    }
-}
-
-fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: (List<TextRect>) -> Unit) {
-    Log.w("Rotation", rotation.toString())
-    val updatedTextRects: MutableList<TextRect> = mutableListOf()
-
-    when (rotation) {
-        180 -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.25f,
-                        bottom = textBlock.bottom.toFloat() * 2.325f,
-                        right = textBlock.right.toFloat() * 2.3f,
-                        left = textBlock.left.toFloat() * 2.1f
-                    ))
-                    )
-                }
-            }
-        }
-        270 -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.25f,
-                        bottom = textBlock.bottom.toFloat() * 2.275f,
-                        right = textBlock.right.toFloat() * 2.3f,
-                        left = textBlock.left.toFloat() * 2.025f
-                    ))
-                    )
-                }
-            }
-        }
-        0 -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.225f,
-                        bottom = textBlock.bottom.toFloat() * 2.275f,
-                        right = textBlock.right.toFloat() * 2.3f,
-                        left = textBlock.left.toFloat() * 2.2f
-                    ))
-                    )
-                }
-            }
-        }
-        else -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, Rect(
-                        top = textBlock.top.toFloat() * 2.2f,
-                        bottom = textBlock.bottom.toFloat() * 2.25f,
-                        right = textBlock.right.toFloat() * 2.25f,
-                        left = textBlock.left.toFloat() * 1.85f
-                    ))
-                    )
-                }
-            }
-        }
-    }
-    updateRectTextList(updatedTextRects)
-}
-
-private fun contains(rect: Rect, x: Float, y: Float): Boolean {
-    return rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y
 }

@@ -3,6 +3,8 @@ package com.ocrtts.ui
 import android.media.Image
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.ocrtts.ui.camera.TextRect
 
@@ -18,7 +20,8 @@ class MainViewModel : ViewModel() {
     var longTouchCounter: MutableState<Int> = mutableStateOf(0)
         private set
 
-    var imageSelected: MutableState<Image?> = mutableStateOf(null)
+    var imageFilePath: MutableState<String?> = mutableStateOf(null)
+        private set
 
     fun setTextRectList(list: List<TextRect>) { textRectList.value = list }
 
@@ -28,5 +31,19 @@ class MainViewModel : ViewModel() {
 
     fun incrementLongTouch() { longTouchCounter.value += 1 }
 
-    fun setImageSelected(image: Image?) { imageSelected.value = image }
+    fun setImageFilePath(path: String?) {
+        imageFilePath.value = path
+    }
+
+    private val _imageSelected = MutableLiveData<Image?>()
+
+    fun setImageSelected(image: Image?) {
+        _imageSelected.value?.close() // Close previous Image if any
+        _imageSelected.value = image
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _imageSelected.value?.close()
+    }
 }

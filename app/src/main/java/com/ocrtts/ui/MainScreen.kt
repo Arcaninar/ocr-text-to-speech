@@ -2,23 +2,26 @@
 
 package com.ocrtts.ui
 
+
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.ui.camera.CameraScreen
+import com.ocrtts.ui.history.HistoryScreen
 import com.ocrtts.ui.selected_image.ImageScreen
 import com.ocrtts.ui.no_permission.NoPermissionScreen
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen() {
-
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
 
     MainContent(
@@ -31,32 +34,36 @@ fun MainScreen() {
 private fun MainContent(
     hasPermission: Boolean,
     onRequestPermission: () -> Unit,
-    viewModel: MainViewModel = viewModel<MainViewModel>()
+    viewModel: MainViewModel = viewModel()
 ) {
     val navController = rememberNavController()
-    val startingScreen = if (hasPermission) Screens.CameraScreen else Screens.NoPermissionScreen
+    val startingScreen = if (hasPermission) "homeScreen" else "noPermissionScreen"
 
     NavHost(navController = navController, startDestination = startingScreen) {
-        composable<Screens.NoPermissionScreen>{
+        composable("noPermissionScreen") {
             NoPermissionScreen(onRequestPermission)
         }
 
-        composable<Screens.CameraScreen> {
-            CameraScreen(viewModel) {
-                navController.navigate(Screens.ImageScreen)
+        composable("homeScreen") {
+            HomeScreen(viewModel, navController)
+        }
+
+        composable("cameraScreen") {
+            CameraScreen(viewModel) { fileName ->
+                navController.navigate("imageScreen?fileName=$fileName")
             }
         }
 
-        composable<Screens.ImageScreen> {
-            ImageScreen(viewModel) {
-                navController.navigate(Screens.CameraScreen)
-            }
+        composable(
+            "imageScreen?fileName={fileName}",
+            arguments = listOf(navArgument("fileName") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val fileName = backStackEntry.arguments?.getString("fileName")
+            ImageScreen(viewModel, navController, fileName)
+        }
+
+        composable("historyScreen") {
+            HistoryScreen(navController)
         }
     }
-
-//    if (hasPermission) {
-//        CameraScreen()
-//    } else {
-//        NoPermissionScreen(onRequestPermission)
-//    }
 }

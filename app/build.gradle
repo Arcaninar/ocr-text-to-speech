@@ -57,6 +57,7 @@ android {
 
 dependencies {
 
+
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.2.0")
 
     implementation 'androidx.core:core-ktx:1.10.1'
@@ -102,6 +103,8 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation platform('androidx.compose:compose-bom:2022.10.00')
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+    runtimeOnly("androidx.compose.material:material-icons-core:1.7.0-beta03")
+    runtimeOnly("androidx.compose.material:material-icons-extended:1.7.0-beta03")
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }
