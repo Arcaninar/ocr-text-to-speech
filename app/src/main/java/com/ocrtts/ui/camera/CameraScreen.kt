@@ -55,7 +55,25 @@ fun CameraScreen(viewModel: MainViewModel, modifier: Modifier = Modifier, naviga
     val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
 
     fun onTextUpdated(updatedText: Text, rotation: Int) {
-        rotate(updatedText.textBlocks, rotation, viewModel::setTextRectList)
+        // 直接更新文本列表，不进行旋转操作
+        val textRects = updatedText.textBlocks.map { textBlock ->
+            val boundingBox = textBlock.boundingBox
+            if (boundingBox != null) {
+                TextRect(
+                    text = textBlock.text,
+                    rect = androidx.compose.ui.geometry.Rect(
+                        top = boundingBox.top.toFloat(),
+                        bottom = boundingBox.bottom.toFloat(),
+                        right = boundingBox.right.toFloat(),
+                        left = boundingBox.left.toFloat()
+                    )
+                )
+            } else {
+                TextRect()
+            }
+        }
+        viewModel.setTextRectList(textRects)
+
         if (updatedText.text.isNotBlank()) {
             if (!viewModel.previousHasText.value) {
                 audio.start()
@@ -181,6 +199,7 @@ private fun saveBitmapToFile(context: Context, bitmap: Bitmap): String {
     Log.d("CameraScreen", "Saved file to: ${file.absolutePath}") // Log the file path
     return file.absolutePath // Return the absolute path of the file
 }
+
 private fun saveFileNameToSharedPreferences(context: Context, fileName: String) {
     val sharedPreferences: SharedPreferences = context.getSharedPreferences("photo_history", Context.MODE_PRIVATE)
     val editor: SharedPreferences.Editor = sharedPreferences.edit()
@@ -213,77 +232,4 @@ private fun startTextRecognition(
 
     previewView.isClickable = true
 
-}
-
-fun rotate(textBlocks: List<Text.TextBlock>, rotation: Int, updateRectTextList: (List<TextRect>) -> Unit) {
-    Log.w("Rotation", rotation.toString())
-    val updatedTextRects: MutableList<TextRect> = mutableListOf()
-
-    when (rotation) {
-        180 -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, androidx.compose.ui.geometry.Rect(
-                            top = textBlock.top.toFloat() * 2.25f,
-                            bottom = textBlock.bottom.toFloat() * 2.325f,
-                            right = textBlock.right.toFloat() * 2.3f,
-                            left = textBlock.left.toFloat() * 2.1f
-                        ))
-                    )
-                }
-            }
-        }
-        270 -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, androidx.compose.ui.geometry.Rect(
-                            top = textBlock.top.toFloat() * 2.25f,
-                            bottom = textBlock.bottom.toFloat() * 2.275f,
-                            right = textBlock.right.toFloat() * 2.3f,
-                            left = textBlock.left.toFloat() * 2.025f
-                        ))
-                    )
-                }
-            }
-        }
-        0 -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, androidx.compose.ui.geometry.Rect(
-                            top = textBlock.top.toFloat() * 2.225f,
-                            bottom = textBlock.bottom.toFloat() * 2.275f,
-                            right = textBlock.right.toFloat() * 2.3f,
-                            left = textBlock.left.toFloat() * 2.2f
-                        ))
-                    )
-                }
-            }
-        }
-        else -> {
-            for (text in textBlocks) {
-                if (text.boundingBox != null) {
-                    val textBlock = text.boundingBox!!
-                    updatedTextRects.add(
-                        TextRect(text.text, androidx.compose.ui.geometry.Rect(
-                            top = textBlock.top.toFloat() * 2.2f,
-                            bottom = textBlock.bottom.toFloat() * 2.25f,
-                            right = textBlock.right.toFloat() * 2.25f,
-                            left = textBlock.left.toFloat() * 1.85f
-                        ))
-                    )
-                }
-            }
-        }
-    }
-    updateRectTextList(updatedTextRects)
-}
-
-private fun contains(rect: androidx.compose.ui.geometry.Rect, x: Float, y: Float): Boolean {
-    return rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom - 25 >= y
 }

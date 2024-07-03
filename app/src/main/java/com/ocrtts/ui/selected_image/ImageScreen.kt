@@ -2,6 +2,7 @@ package com.ocrtts.ui.selected_image
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.compose.ui.layout.ContentScale
 import com.ocrtts.R
 import com.ocrtts.ui.MainViewModel
 
@@ -26,7 +28,10 @@ fun ImageScreen(viewModel: MainViewModel, navController: NavController, fileName
     val bitmap = remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(fileName) {
-        bitmap.value = fileName?.let { BitmapFactory.decodeFile(it) }
+        bitmap.value = fileName?.let { filePath ->
+            val originalBitmap = BitmapFactory.decodeFile(filePath)
+            originalBitmap?.let { rotateBitmap(it, 90f) }
+        }
     }
 
     bitmap.value?.let { bmp ->
@@ -35,7 +40,8 @@ fun ImageScreen(viewModel: MainViewModel, navController: NavController, fileName
                 Image(
                     bitmap = bmp.asImageBitmap(),
                     contentDescription = "Image",
-                    modifier = Modifier.fillMaxHeight()
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop // 让图片填充整个 ImageScreen
                 )
                 IconButton(
                     onClick = {
@@ -49,7 +55,7 @@ fun ImageScreen(viewModel: MainViewModel, navController: NavController, fileName
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = "Back to video",
-                        tint = Color.Black, // 设置箭头颜色为黑色
+                        tint = Color.White, // 设置箭头颜色为黑色
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -64,11 +70,18 @@ fun ImageScreen(viewModel: MainViewModel, navController: NavController, fileName
                     Icon(
                         painter = painterResource(id = R.drawable.history),
                         contentDescription = "History Icon",
-                        tint = Color.Black, // 设置图标颜色
+                        tint = Color.White, // 设置图标颜色
                         modifier = Modifier.size(30.dp)
                     )
                 }
             }
         }
     }
+}
+
+private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
+    val matrix = Matrix().apply {
+        postRotate(degrees)
+    }
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 }
