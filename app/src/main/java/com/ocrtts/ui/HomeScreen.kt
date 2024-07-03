@@ -22,7 +22,7 @@ import androidx.navigation.NavController
 import com.ocrtts.R
 
 @Composable
-fun HomeScreen(viewModel: MainViewModel, navController: NavController, modifier: Modifier = Modifier) {
+fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
     Box(
         modifier = Modifier
             .fillMaxSize()
