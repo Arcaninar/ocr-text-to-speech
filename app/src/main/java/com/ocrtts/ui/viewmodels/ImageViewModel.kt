@@ -1,7 +1,6 @@
 package com.ocrtts.ui.viewmodels
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +28,7 @@ class ImageViewModel : ViewModel() {
 
     fun addTextRectList(list: List<TextRect>) { textRectList += list }
 
-    fun setTextRectSelected(value: TextRect?) { textRectSelected = value }
+    fun updateTextRectSelected(value: TextRect?) { textRectSelected = value }
 
     fun incrementLongTouch() { longTouchCounter += 1 }
 

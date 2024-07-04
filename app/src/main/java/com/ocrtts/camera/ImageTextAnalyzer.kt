@@ -9,28 +9,38 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ocrtts.type.TextRect
+import java.io.Serializable
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 private const val TAG = "ImageTextRecognitionAnalyzer"
 
-suspend fun analyzeOffline(image: Bitmap, addTextRect: (List<TextRect>) -> Unit) {
+suspend fun analyzeOnline(image: Bitmap) {
+
+}
+
+
+suspend fun analyzeOffline(
+    image: InputImage,
+//    addTextRect: ((List<TextRect>) -> Unit)?,
+    onlyDetect: Boolean
+): Pair<Boolean, Text?> {
     val englishRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     val chineseRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
-    val inputImage = InputImage.fromBitmap(image, 0)
     var isSuccess = false
+    var text: Text? = null
 
     suspendCoroutine { continuation ->
-        englishRecognizer.process(inputImage)
+        englishRecognizer.process(image)
             .addOnSuccessListener { visionText ->
                 if (visionText.text.isNotBlank()){
                     isSuccess = true
-                    val textList = rotate(visionText.textBlocks, 90)
-                    addTextRect(textList)
+                    text = visionText
+//                    val textList = rotate(visionText.textBlocks, 90)
+//                    addTextRect!!(textList)
                 }
             }
             .addOnFailureListener { e ->
-                isSuccess = false
                 Log.e(TAG, "Error processing image for text recognition: ${e.message}")
             }
             .addOnCompleteListener {
@@ -38,17 +48,21 @@ suspend fun analyzeOffline(image: Bitmap, addTextRect: (List<TextRect>) -> Unit)
             }
     }
 
+    if (onlyDetect && isSuccess) {
+        return true to text
+    }
+
     suspendCoroutine { continuation ->
-        chineseRecognizer.process(inputImage)
+        chineseRecognizer.process(image)
             .addOnSuccessListener { visionText ->
                 if (visionText.text.isNotBlank()){
                     isSuccess = true
-                    val textList = rotate(visionText.textBlocks, 90)
-                    addTextRect(textList)
+                    text = visionText
+//                    val textList = rotate(visionText.textBlocks, 90)
+//                    addTextRect!!(textList)
                 }
             }
             .addOnFailureListener { e ->
-                isSuccess = false
                 Log.e(TAG, "Error processing image for text recognition: ${e.message}")
             }
             .addOnCompleteListener {
@@ -56,11 +70,12 @@ suspend fun analyzeOffline(image: Bitmap, addTextRect: (List<TextRect>) -> Unit)
             }
     }
 
-    if (!isSuccess) {
-        // maybe put the image only after it finished?
-        // also maybe if cannot detect text then need to tell user and go back to camera?
-    }
+//    if (!isSuccess) {
+//        // maybe put the image only after it finished?
+//        // also maybe if cannot detect text then need to tell user and go back to camera?
+//    }
 
+    return isSuccess to text
 }
 
 fun rotate(

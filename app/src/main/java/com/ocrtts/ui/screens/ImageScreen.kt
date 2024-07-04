@@ -43,7 +43,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.camera.CameraTextAnalyzer
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +54,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navController: NavController, modifier: Modifier = Modifier, viewModel: ImageViewModel = viewModel()) {
+fun ImageScreen(fileName: String, navController: NavController, sharedViewModel: ImageSharedViewModel, modifier: Modifier = Modifier, viewModel: ImageViewModel = viewModel()) {
     val interactionSource = remember { MutableInteractionSource() }
 
     LaunchedEffect(interactionSource) {
@@ -70,14 +69,14 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
                     var hasText = false
                     for (text in viewModel.textRectList) {
                         if (contains(text.rect, position.x, position.y)) {
-                            viewModel.setTextRectSelected(text)
+                            viewModel.updateTextRectSelected(text)
                             hasText = true
                             break
                         }
                     }
 
                     if (hasText.not()) {
-                        viewModel.setTextRectSelected(null)
+                        viewModel.updateTextRectSelected(null)
                     }
 
                     delay(3000L)
@@ -120,7 +119,7 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
             .fillMaxSize()
             .background(Color.White)) {
             if (viewModel.isFinishedAnalysing) {
-                if (image == null) {
+                if (!viewModel.containText) {
                     Text("The image that you took does not contain text. This can happened when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
                 }
                 else {
