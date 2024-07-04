@@ -72,9 +72,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             CameraScreen(navController=navController,viewModel=viewModel)
         }
         composable(Screens.ImageScreen.route) {
-            ImageScreen(viewModel) {
-                navController.navigate(Screens.CameraScreen.route)
-            }
+//            ImageScreen(viewModel) {
+//                navController.navigate(Screens.CameraScreen.route)
+//            }
         }
     }
     Log.i(TAG,"triggered")
