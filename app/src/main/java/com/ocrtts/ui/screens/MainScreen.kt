@@ -2,6 +2,7 @@
 
 package com.ocrtts.ui.screens
 
+import HistoryScreen
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -55,10 +56,12 @@ fun MainScreen() {
                 val fileName = it.arguments?.getString("fileName")
                 ImageScreen(fileName = fileName!!, sharedViewModel = sharedViewModel, navController = navController)
             }
+            composable(Screens.HistoryScreen.route) {
+                val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
+                HistoryScreen(navController = navController, sharedViewModel = sharedViewModel)
+            }
         }
-        composable(Screens.HistoryScreen.route) { 
-            HistoryScreen(navController = navController)
-        }
+
     }
     Log.i(TAG,"triggered")
 }
