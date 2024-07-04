@@ -307,8 +307,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.camera.TextAnalyzer
-import com.ocrtts.data.TextRect
+import com.ocrtts.camera.CameraTextAnalyzer
+import com.ocrtts.type.TextRect
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -347,7 +347,7 @@ fun CameraScreen(
             .build()
             .also {analysis ->
                 val coroutineScope = CoroutineScope(Job() + Dispatchers.Main)
-                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), TextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
+                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), CameraTextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
             }
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -355,7 +355,7 @@ fun CameraScreen(
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture,imageAnalysis)
+        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture, imageAnalysis)
         preview.setSurfaceProvider(previewView.surfaceProvider)
     }
     BackHandler {
@@ -366,7 +366,7 @@ fun CameraScreen(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
-        if (viewModel.recognizedText.value) {
+        if (viewModel.recognizedText) {
             NotifyUser(imageCapture = imageCapture, navController = navController, sharedViewModel = sharedViewModel)
         }
     }

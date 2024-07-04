@@ -6,17 +6,19 @@ import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 //TODO
-//Without try-catch, the exception may not be properly catched if the recognizer has error in initialization
+//Without try-catch, the exception may not be properly caught if the recognizer has error in initialization
 //Add Simple Lock
 //Try to have simple check for the ocr result
 
@@ -62,9 +64,9 @@ import kotlinx.coroutines.withContext
 //    }
 //}
 
-const val TAG = "TextRecognitionAnalyzer"
+private const val TAG = "CameraTextRecognitionAnalyzer"
 
-class TextAnalyzer(private val onTextRecognized: (Text) -> Unit, private val coroutineScope: CoroutineScope) : ImageAnalysis.Analyzer {
+class CameraTextAnalyzer(private val onTextRecognized: (Boolean) -> Unit, private val coroutineScope: CoroutineScope) : ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false
     override fun analyze(imageProxy: ImageProxy) {
         if (!isLocked) {
@@ -82,20 +84,49 @@ class TextAnalyzer(private val onTextRecognized: (Text) -> Unit, private val cor
         val mediaImage = image.image
         if (mediaImage != null) {
             val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
-            val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            val englishRecognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            val chineseRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
+
+            var hasText = false
             try {
                 withContext(Dispatchers.IO) {
-                    recognizer.process(inputImage)
-                        .addOnSuccessListener { visionText ->
-                            onTextRecognized(visionText)
+                    suspendCoroutine { continuation ->
+                        englishRecognizer.process(inputImage)
+                            .addOnSuccessListener { visionText ->
+                                if (visionText.text.isNotBlank()) {
+                                    hasText = true
+                                    onTextRecognized(true)
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e(TAG, "Error processing image for text recognition: ${e.message}")
+                            }
+                            .addOnCompleteListener {
+                                if (hasText) {
+                                    image.close() // Ensure to close the ImageProxy here
+                                    isLocked = false
+                                    continuation.resume(Unit)
+                                }
+                            }
+                    }
+
+                    if (!hasText) {
+                        suspendCoroutine { continuation ->
+                            chineseRecognizer.process(inputImage)
+                                .addOnSuccessListener { visionText ->
+                                    onTextRecognized(visionText.text.isNotBlank())
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e(TAG, "Error processing image for text recognition: ${e.message}")
+                                }
+                                .addOnCompleteListener {
+                                    image.close() // Ensure to close the ImageProxy here
+                                    isLocked = false
+                                    continuation.resume(Unit)
+                                }
                         }
-                        .addOnFailureListener { e ->
-                            Log.e(TAG, "Error processing image for text recognition: ${e.message}")
-                        }
-                        .addOnCompleteListener {
-                            image.close() // Ensure to close the ImageProxy here
-                            isLocked = false
-                        }
+                    }
+
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Exception in processing text recognition: ${e.message}")

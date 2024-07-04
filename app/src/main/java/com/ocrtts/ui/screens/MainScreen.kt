@@ -55,10 +55,12 @@ fun MainScreen() {
                 val fileName = it.arguments?.getString("fileName")
                 ImageScreen(fileName = fileName!!, sharedViewModel = sharedViewModel, navController = navController)
             }
+            composable(Screens.HistoryScreen.route) {
+                val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
+                HistoryScreen(navController = navController)
+            }
         }
-        composable(Screens.HistoryScreen.route) { 
-            HistoryScreen(navController = navController)
-        }
+
     }
     Log.i(TAG,"triggered")
 }

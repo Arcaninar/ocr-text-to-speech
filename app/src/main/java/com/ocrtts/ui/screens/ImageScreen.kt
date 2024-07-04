@@ -17,11 +17,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,7 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.camera.TextAnalyzer
+import com.ocrtts.camera.CameraTextAnalyzer
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -59,12 +63,12 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
             val TAG = "ImagePress"
             when (interaction) {
                 is PressInteraction.Press -> {
-                    Log.w(TAG, "Pressed: " + viewModel.longTouchCounter.value)
-                    val isLongClick = viewModel.longTouchCounter.value
+                    Log.w(TAG, "Pressed: " + viewModel.longTouchCounter)
+                    val isLongClick = viewModel.longTouchCounter
 
                     val position = interaction.pressPosition
                     var hasText = false
-                    for (text in viewModel.textRectList.value) {
+                    for (text in viewModel.textRectList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.setTextRectSelected(text)
                             hasText = true
@@ -77,8 +81,8 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
                     }
 
                     delay(3000L)
-                    if (viewModel.longTouchCounter.value == isLongClick && hasText) {
-                        Log.w(TAG, "Long press: " + viewModel.textRectSelected.value!!.text)
+                    if (viewModel.longTouchCounter == isLongClick && hasText) {
+                        Log.w(TAG, "Long press: " + viewModel.textRectSelected!!.text)
                         //TODO: Text to Speech
                     }
 
@@ -86,17 +90,17 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
 
                 is PressInteraction.Release -> {
                     viewModel.incrementLongTouch()
-                    Log.w(TAG, "Release press: " + viewModel.longTouchCounter.value)
+                    Log.w(TAG, "Release press: " + viewModel.longTouchCounter)
                 }
             }
         }
     }
 
-   lateinit var image: Bitmap
+    lateinit var image: Bitmap
     if (fileName.isBlank()) {
         val imageProxy by sharedViewModel.sharedImageProxy.collectAsStateWithLifecycle()
         val coroutineScope = CoroutineScope(Job() + Dispatchers.Main)
-        TextAnalyzer(viewModel::setRecognizedText, coroutineScope).analyze(imageProxy!!)
+//        CameraTextAnalyzer(viewModel::setRecognizedText, coroutineScope).analyze(imageProxy!!)
 
         image = imageToBitmap(imageProxy!!.image!!)
     }
@@ -112,12 +116,34 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
 
 
     Surface(modifier = modifier.background(Color.Transparent)) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Image(
-                bitmap = image.asImageBitmap(),
-                contentDescription = "Image",
-                modifier = Modifier.fillMaxSize().clickable(interactionSource = interactionSource, indication = null, onClick = {})
-            )
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)) {
+            if (viewModel.isFinishedAnalysing) {
+                if (image == null) {
+                    Text("The image that you took does not contain text. This can happened when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
+                }
+                else {
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = "Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                                onClick = {})
+                    )
+                }
+            }
+            else {
+                CircularProgressIndicator(
+                    modifier = Modifier.width(64.dp).align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+
             IconButton(
                 onClick = {
                     navController.navigate(Screens.CameraScreen.route)
@@ -151,8 +177,8 @@ fun ImageScreen(fileName: String, sharedViewModel: ImageSharedViewModel, navCont
             }
         }
 
-        if (viewModel.textRectSelected.value != null) {
-            val box = viewModel.textRectSelected.value!!.rect
+        if (viewModel.textRectSelected != null) {
+            val box = viewModel.textRectSelected!!.rect
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val path = Path().apply {
                     addRect(

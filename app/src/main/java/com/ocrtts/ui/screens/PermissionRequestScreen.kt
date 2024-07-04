@@ -57,11 +57,11 @@ fun PermissionRequestScreen(
     val context = LocalContext.current
     var alert by remember { mutableStateOf("") }
     var btnText by remember { mutableStateOf("") }
-    var btnAction by remember { mutableStateOf<() -> Unit>({}) }
+    var btnAction by remember { mutableStateOf({}) }
 
 
     LaunchedEffect(viewModel.denyCount) {
-        Log.i(TAG,"lauchedeffect denyCount: " + viewModel.denyCount)
+        Log.i(TAG,"launched effect denyCount: " + viewModel.denyCount)
         if (viewModel.denyCount > MAX_DENY_COUNT) {
             alert = "Camera permission required for this feature to be available. Please grant the permission in Settings manually."
             btnText = "Go to Settings"
@@ -83,14 +83,14 @@ fun PermissionRequestScreen(
     }
 
     LaunchedEffect(cameraPermissionState.status.shouldShowRationale) {
-        Log.i(TAG, "launchedeffect shouldShowRationale: " + cameraPermissionState.status.shouldShowRationale.toString())
+        Log.i(TAG, "launched effect shouldShowRationale: " + cameraPermissionState.status.shouldShowRationale.toString())
         if (!cameraPermissionState.status.shouldShowRationale && viewModel.denyCount != 0) { // if cannot ask for user permission again
             viewModel.setToMaxDenyCount()
         }
     }
 
     LaunchedEffect(cameraPermissionState.status.isGranted) {
-        Log.i(TAG, "lauchedeffect cameraPermissionState.status")
+        Log.i(TAG, "launched effect cameraPermissionState.status")
         if (cameraPermissionState.status.isGranted) {
             viewModel.resetDenyCount()
             navController.navigate(Screens.MainCameraScreen.route) {

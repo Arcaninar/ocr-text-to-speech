@@ -1,7 +1,9 @@
 package com.ocrtts.ui.viewmodels
 
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.mlkit.vision.text.Text
 
@@ -14,7 +16,7 @@ class CameraViewModel : ViewModel() {
 //    private val _recognizedText = MutableStateFlow<String>("")
 //    val recognizedText = _recognizedText.asStateFlow()
 
-    var recognizedText: MutableState<Boolean> = mutableStateOf(false)
+    var recognizedText by mutableStateOf(false)
         private set
 
 //    var textRectList: MutableState<List<TextRect>> = mutableStateOf(listOf())
@@ -41,14 +43,9 @@ class CameraViewModel : ViewModel() {
 
 //    fun setImageSelected(image: Image?) { imageSelected.value = image }
 
-    fun updateRecognizedText(text: Text) {
+    fun updateRecognizedText(value: Boolean) {
 //        _recognizedText.value = text
 //        Log.i(TAG,text)
-        if (text.text.isNotBlank()) {
-            recognizedText.value = true
-        }
-        else {
-            recognizedText.value = false
-        }
+        recognizedText = value
     }
 }

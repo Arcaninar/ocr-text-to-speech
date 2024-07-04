@@ -39,9 +39,6 @@ android {
         compose true
         buildConfig = true
     }
-//    composeOptions {
-//        kotlinCompilerExtensionVersion '1.5.1'
-//    }
     composeCompiler {
         enableStrongSkippingMode = true
 
@@ -56,8 +53,6 @@ android {
 }
 
 dependencies {
-
-
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.2.0")
 
     implementation 'androidx.core:core-ktx:1.13.1'
@@ -95,6 +90,7 @@ dependencies {
 
     //// ML-KIT ////
     implementation 'com.google.mlkit:text-recognition:16.0.0'
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.0'
 
     //// ACCOMPANIST ////
     implementation "com.google.accompanist:accompanist-permissions:$accompanist_version"
