@@ -1,4 +1,4 @@
-package com.ocrtts.data
+package com.ocrtts.type
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Rect

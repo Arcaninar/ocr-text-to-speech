@@ -1,6 +1,5 @@
 package com.ocrtts.ui.screens
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.media.MediaPlayer
@@ -10,7 +9,6 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -42,8 +40,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.camera.TextAnalyzer
-import com.ocrtts.data.TextRect
+import com.ocrtts.camera.CameraTextAnalyzer
+import com.ocrtts.history.addToHistory
+import com.ocrtts.type.TextRect
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -82,7 +81,7 @@ fun CameraScreen(
             .build()
             .also { analysis ->
                 val coroutineScope = CoroutineScope(Job() + Dispatchers.Main)
-                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), TextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
+                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), CameraTextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
             }
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -101,7 +100,7 @@ fun CameraScreen(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
-        if (viewModel.recognizedText.value) {
+        if (viewModel.recognizedText) {
             NotifyUser(imageCapture = imageCapture, navController = navController, sharedViewModel = sharedViewModel)
         }
     }
@@ -145,10 +144,12 @@ fun onClickButton(imageCapture: ImageCapture, context: Context, navController: N
     imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                Log.d(TAG, "Photo capture succeeded: ${photoFile.absolutePath}")
+                val path = photoFile.absolutePath
+                Log.d(TAG, "Photo capture succeeded: $path")
                 // Update ViewModel with the captured image file
-                sharedViewModel.addImageToHistory(photoFile)
-                navController.navigate(Screens.ImageScreen.route + "?fileName=${photoFile.absolutePath}")
+                addToHistory(context, path)
+                sharedViewModel.setFileName(path)
+                navController.navigate(Screens.ImageScreen.route)
             }
 
             override fun onError(exception: ImageCaptureException) {

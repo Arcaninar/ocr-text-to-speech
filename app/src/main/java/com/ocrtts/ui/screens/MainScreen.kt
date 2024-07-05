@@ -45,16 +45,9 @@ fun MainScreen() {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
                 CameraScreen(navController = navController, sharedViewModel = sharedViewModel)
             }
-            composable(
-                route = "${Screens.ImageScreen.route}?fileName={fileName}",
-                arguments = listOf(navArgument("fileName") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                })
-            ) {
+            composable(Screens.ImageScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                val fileName = it.arguments?.getString("fileName")
-                ImageScreen(fileName = fileName!!, sharedViewModel = sharedViewModel, navController = navController)
+                ImageScreen(sharedViewModel = sharedViewModel, navController = navController)
             }
             composable(Screens.HistoryScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)

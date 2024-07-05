@@ -20,6 +20,10 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+        buildConfigField "String", "API_KEY", "\"${properties.getProperty('API_KEY')}\""
     }
 
     buildTypes {
@@ -39,9 +43,6 @@ android {
         compose true
         buildConfig = true
     }
-//    composeOptions {
-//        kotlinCompilerExtensionVersion '1.5.1'
-//    }
     composeCompiler {
         enableStrongSkippingMode = true
 
@@ -56,8 +57,6 @@ android {
 }
 
 dependencies {
-
-
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.2.0")
 
     implementation 'androidx.core:core-ktx:1.13.1'
@@ -77,24 +76,20 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1"
     implementation 'androidx.navigation:navigation-compose:2.8.0-beta04'
 
-    debugImplementation 'androidx.compose.ui:ui-tooling'
-    debugImplementation 'androidx.compose.ui:ui-test-manifest'
-
     ///// LIFECYCLE /////
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.3"
 
     //// CAMERA STUFF ////
     implementation "androidx.camera:camera-camera2:$camerax_version"
     implementation "androidx.camera:camera-lifecycle:$camerax_version"
     implementation "androidx.camera:camera-view:$camerax_version"
-    implementation "androidx.camera:camera-extensions:$camerax_version"
 
     //// ML-KIT ////
     implementation 'com.google.mlkit:text-recognition:16.0.0'
+    implementation 'com.google.mlkit:text-recognition-chinese:16.0.0'
 
     //// ACCOMPANIST ////
     implementation "com.google.accompanist:accompanist-permissions:$accompanist_version"

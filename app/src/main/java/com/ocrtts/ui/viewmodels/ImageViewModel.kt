@@ -1,34 +1,50 @@
 package com.ocrtts.ui.viewmodels
 
 import android.util.Log
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.ViewModel
 import com.google.mlkit.vision.text.Text
-import com.ocrtts.data.TextRect
+import com.ocrtts.type.TextRect
 
 class ImageViewModel : ViewModel() {
-    var textRectList: MutableState<List<TextRect>> = mutableStateOf(listOf())
+    var textRectList: List<TextRect> by mutableStateOf(listOf())
         private set
 
-    var textRectSelected: MutableState<TextRect?> = mutableStateOf(null)
+    var textRectSelected: TextRect? by mutableStateOf(null)
         private set
 
-    var longTouchCounter: MutableState<Int> = mutableStateOf(0)
+    var longTouchCounter by mutableIntStateOf(0)
         private set
 
-    fun setTextRectList(list: List<TextRect>) { textRectList.value = list }
+    var isFinishedAnalysing by mutableStateOf(false)
+        private set
 
-    fun setTextRectSelected(value: TextRect?) { textRectSelected.value = value }
+    var containText by mutableStateOf(false)
+        private set
 
-    fun incrementLongTouch() { longTouchCounter.value += 1 }
+    fun addTextRectList(list: List<TextRect>) { textRectList += list }
+
+    fun updateTextRectSelected(value: TextRect?) { textRectSelected = value }
+
+    fun incrementLongTouch() { longTouchCounter += 1 }
 
     fun setRecognizedText(text: Text) {
         rotate(text.textBlocks, 90)
     }
 
-    fun rotate(
+    fun finishedAnalyzing() {
+        isFinishedAnalysing = true
+    }
+
+    fun imageContainsText() {
+        containText = true
+    }
+
+    private fun rotate(
         textBlocks: List<Text.TextBlock>,
         rotation: Int
     ) {
@@ -80,7 +96,7 @@ class ImageViewModel : ViewModel() {
                 )
             }
         }
-        textRectList.value = updatedTextRects
+        textRectList = updatedTextRects
     }
 
     private fun modifyRectSize(
