@@ -60,12 +60,15 @@ android {
 }
 
 dependencies {
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+
 
 //    implementation 'com.google.android.ads:mediation-test-suite:3.0.0'
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.2.0")
 
     implementation 'androidx.core:core-ktx:1.13.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.2'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.3'
     implementation 'androidx.activity:activity-compose:1.9.0'
 
     implementation platform('androidx.compose:compose-bom:2024.06.00')

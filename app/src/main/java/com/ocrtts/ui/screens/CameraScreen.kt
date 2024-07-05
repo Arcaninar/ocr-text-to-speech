@@ -9,6 +9,7 @@ package com.ocrtts.ui.screens
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -32,6 +33,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -83,7 +86,14 @@ fun CameraScreen(
             }
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
-    val isGenerating by viewModel.isGenerating.collectAsState()
+    val drawableTextBlocks by viewModel.drawableTextBlocks.collectAsState()
+    val configuration = LocalConfiguration.current
+    val screenRotation = when (configuration.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> 90
+        Configuration.ORIENTATION_PORTRAIT -> 0
+        else -> 0
+    }
+
 
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
@@ -103,26 +113,22 @@ fun CameraScreen(
         )
 
         Canvas(modifier = Modifier.fillMaxSize()) {
-            viewModel.randomBoxes.forEach { box ->
+            val previewWidth = previewView.width.toFloat()
+            val previewHeight = previewView.height.toFloat()
+
+            drawableTextBlocks.forEach { block ->
+                val left = block.topLeft.x * previewWidth
+                val top = block.topLeft.y * previewHeight
+                val right = left + (block.size.width * previewWidth)
+                val bottom = top + (block.size.height * previewHeight)
+
                 drawRect(
-                    color = box.color,
-                    topLeft = Offset(box.x, box.y),
-                    size = Size(box.size, box.size)
+                    color = Color.Red,
+                    topLeft = Offset(left, top),
+                    size = Size(right - left, bottom - top),
+                    style = Stroke(width = 2f)
                 )
             }
         }
-
-        Button(
-            onClick = {
-                viewModel.viewModelScope.launch {
-                viewModel.toggleBoxGeneration(previewView.width.toFloat(), previewView.height.toFloat())
-            } },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-        ) {
-            Text(if (isGenerating) "Stop Generating" else "Start Generating")
-        }
     }
-
 }

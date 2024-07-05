@@ -1,7 +1,10 @@
 package com.ocrtts.ui.viewmodels
 
+import android.graphics.Point
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,92 +20,56 @@ import kotlin.random.Random
 
 const val TAG="MainViewModel"
 
-data class RandomBox(
-    val x: Float,
-    val y: Float,
-    val size: Float,
-    val color: Color
-)
 
 data class RecognizedTextBlock(
     val text: String,
-    val rect: android.graphics.Rect?
+    val rect: List<Point>
+)
+
+
+data class DrawableTextBlock(
+    val topLeft: Offset,
+    val size: Size
 )
 
 class MainViewModel : ViewModel() {
-    private val _randomBoxes = mutableStateListOf<RandomBox>()
-    val randomBoxes: List<RandomBox> = _randomBoxes
 
-    private val _isGenerating = MutableStateFlow(false)
-    val isGenerating = _isGenerating.asStateFlow()
 
     private val _recognizedTextBlocks = MutableStateFlow<List<RecognizedTextBlock>>(emptyList())
     val recognizedTextBlocks = _recognizedTextBlocks.asStateFlow()
 
-//    var textRectList: MutableState<List<TextRect>> = mutableStateOf(listOf())
-//
-//    var textRectSelected: MutableState<TextRect?> = mutableStateOf(null)
-//        private set
-//
-//    var previousHasText: MutableState<Boolean> = mutableStateOf(false)
-//        private set
-//
-//    var longTouchCounter: MutableState<Int> = mutableStateOf(0)
-//        private set
-//
-//    var imageSelected: MutableState<Image?> = mutableStateOf(null)
-//
-//    fun setTextRectList(list: List<TextRect>) { textRectList.value = list }
-//
-//    fun setTextRectSelected(value: TextRect?) { textRectSelected.value = value }
-//
-//    fun setPreviousHasText(value: Boolean) { previousHasText.value = value }
-//
-//    fun incrementLongTouch() { longTouchCounter.value += 1 }
-//
-//    fun setImageSelected(image: Image?) { imageSelected.value = image }
 
-    private val _recognizedText = MutableStateFlow<String>("")
-    val recognizedText = _recognizedText.asStateFlow()
+    private val _drawableTextBlocks = MutableStateFlow<List<DrawableTextBlock>>(emptyList())
+    val drawableTextBlocks = _drawableTextBlocks.asStateFlow()
+
 
 //    fun onTextRecognized(result: mutableListOf<RecognizedTextBlock>()) {
 ////        _recognizedText.value = text
 ////        Log.i(TAG,text)
 //    }
-    fun onTextRecognized(textBlocks: List<RecognizedTextBlock>) {
-        viewModelScope.launch {
-            _recognizedTextBlocks.emit(textBlocks)
-            Log.i(TAG, "Recognized ${textBlocks.size} text blocks")
-            textBlocks.forEachIndexed { index, block ->
-                Log.d(TAG, "Block $index: ${block.text}, Bounds: ${block.rect}")
+fun onTextRecognized(textBlocks: List<RecognizedTextBlock>, imageWidth: Int, imageHeight: Int, rotation: Int) {
+    viewModelScope.launch {
+        val drawableBlocks = textBlocks.mapNotNull { block ->
+            if (block.rect.size != 4) return@mapNotNull null
+
+            val adjustedPoints = when (rotation) {
+                90 -> block.rect.map { Point(imageHeight - it.y, it.x) }
+                180 -> block.rect.map { Point(imageWidth - it.x, imageHeight - it.y) }
+                270 -> block.rect.map { Point(it.y, imageWidth - it.x) }
+                else -> block.rect // 0 度
             }
-        }
-    }
 
-    suspend fun toggleBoxGeneration(maxWidth: Float, maxHeight: Float) {
-        _isGenerating.value = !_isGenerating.value
-        while (_isGenerating.value) {
-            addRandomBox(maxWidth, maxHeight)
-            delay(100) // 每100毫秒添加一个新的box
-        }
-    }
+            val minX = adjustedPoints.minOf { it.x }.toFloat()
+            val minY = adjustedPoints.minOf { it.y }.toFloat()
+            val maxX = adjustedPoints.maxOf { it.x }.toFloat()
+            val maxY = adjustedPoints.maxOf { it.y }.toFloat()
 
-    private fun addRandomBox(maxWidth: Float, maxHeight: Float) {
-        _randomBoxes.add(
-            RandomBox(
-                x = Random.nextFloat() * maxWidth,
-                y = Random.nextFloat() * maxHeight,
-                size = Random.nextFloat() * (50f - 20f) + 20f,
-                color = Color(
-                    red = Random.nextFloat(),
-                    green = Random.nextFloat(),
-                    blue = Random.nextFloat(),
-                    alpha = 0.5f
-                )
+            DrawableTextBlock(
+                topLeft = Offset(minX / imageWidth, minY / imageHeight),
+                size = Size((maxX - minX) / imageWidth, (maxY - minY) / imageHeight)
             )
-        )
-        if (_randomBoxes.size > 100) {
-            _randomBoxes.removeAt(0)
         }
+        _drawableTextBlocks.emit(drawableBlocks)
     }
+}
 }

@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
 
 const val TAG = "TextRecognitionAnalyzer"
 
-class TextAnalyzer(private val onTextRecognized: (List<RecognizedTextBlock>) -> Unit,
+class TextAnalyzer(private val onTextRecognized: (List<RecognizedTextBlock>,Int,Int,Int) -> Unit,
                    private val coroutineScope: CoroutineScope) :
     ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false
@@ -34,7 +34,7 @@ class TextAnalyzer(private val onTextRecognized: (List<RecognizedTextBlock>) -> 
         if (!isLocked) {
             isLocked=true
             coroutineScope.launch {
-                recognizeText(imageProxy)
+                recognizeText(imageProxy, imageProxy.width, imageProxy.height, imageProxy.imageInfo.rotationDegrees)
             }
         }
         else{
@@ -43,7 +43,7 @@ class TextAnalyzer(private val onTextRecognized: (List<RecognizedTextBlock>) -> 
     }
 
     @OptIn(ExperimentalGetImage::class)
-    private suspend fun recognizeText(image: ImageProxy) {
+    private suspend fun recognizeText(image: ImageProxy,width: Int, height: Int,rotation: Int) {
         val mediaImage = image.image
         if (mediaImage != null) {
             val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
@@ -55,7 +55,7 @@ class TextAnalyzer(private val onTextRecognized: (List<RecognizedTextBlock>) -> 
 //                            if(visionText.text.isNotBlank()){
 //                                onTextRecognized(visionText.text)
 //                            }
-                            processRecognizedText(visionText)
+                            processRecognizedText(visionText, width, height, rotation)
                         }
                         .addOnFailureListener { e ->
                             Log.e(TAG, "Error processing image for text recognition: ${e.message}")
@@ -75,16 +75,18 @@ class TextAnalyzer(private val onTextRecognized: (List<RecognizedTextBlock>) -> 
         }
     }
 
-    private fun processRecognizedText(visionText: Text) {
+    private fun processRecognizedText(visionText: Text, imageWidth: Int, imageHeight: Int, rotation: Int) {
         val recognizedTextBlocks = mutableListOf<RecognizedTextBlock>()
+
         for (block in visionText.textBlocks) {
-            if(block.text.isBlank()|| block.boundingBox==null|| block.boundingBox!!.isEmpty){
+            if(block.text.isBlank()|| block.cornerPoints.isNullOrEmpty()){
                 continue
             }
-            recognizedTextBlocks.add(RecognizedTextBlock(block.text, block.boundingBox))
+            Log.i(TAG," :"+block.cornerPoints?.toList().toString())
+            recognizedTextBlocks.add(RecognizedTextBlock(block.text,  block.cornerPoints?.toList() ?: emptyList()))
         }
         if (recognizedTextBlocks.isNotEmpty()) {
-            onTextRecognized(recognizedTextBlocks)
+            onTextRecognized(recognizedTextBlocks, imageWidth, imageHeight, rotation)
         }
     }
 
