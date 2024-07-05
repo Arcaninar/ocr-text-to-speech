@@ -43,9 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.google.mlkit.vision.common.InputImage
 import com.ocrtts.R
-import com.ocrtts.camera.analyzeOffline
+import com.ocrtts.camera.analyzeOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import kotlinx.coroutines.delay
@@ -89,12 +88,12 @@ fun ImageScreen(
             val TAG = "ImagePress"
             when (interaction) {
                 is PressInteraction.Press -> {
-                    Log.w(TAG, "Pressed: ${viewModel.longTouchCounter}")
+                    Log.w(TAG + "test", "Pressed: ${interaction.pressPosition}")
                     val isLongClick = viewModel.longTouchCounter
 
                     val position = interaction.pressPosition
                     var hasText = false
-                    for (text in viewModel.textRectList) {
+                    for (text in viewModel.OCRTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
                             hasText = true
@@ -108,7 +107,7 @@ fun ImageScreen(
 
                     delay(3000L)
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
-                        Log.w(TAG, "Long press: ${viewModel.textRectSelected?.text}")
+                        Log.w(TAG, "Long press: ${viewModel.OCRTextSelected?.text}")
                         // TODO: Text to Speech
                     }
                 }
@@ -124,17 +123,15 @@ fun ImageScreen(
     val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
     val file = File(fileName)
     val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-//    val image = bitmap.rotate(90f) // Rotate the bitmap
 
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
-            val (isSuccess, text) = analyzeOffline(InputImage.fromBitmap(bitmap, 90), false)
+            val textRectList = analyzeOCR(image = bitmap)
 
-            if (isSuccess) {
-                viewModel.finishedAnalyzing()
-                if (text!!.text.isNotBlank()) {
-                    viewModel.imageContainsText()
-                }
+            viewModel.finishedAnalyzing()
+            if (textRectList.isNotEmpty()) {
+                viewModel.imageContainsText()
+                viewModel.updateTextRectList(textRectList)
             }
         }
     }
@@ -168,7 +165,7 @@ fun ImageScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 if (viewModel.isFinishedAnalysing) {
                     if (!viewModel.containText) {
-                        Text("The image that you took does not contain text. This can happened when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
+                        Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
                     }
                     else {
                         Image(
@@ -182,6 +179,39 @@ fun ImageScreen(
                                     indication = null,
                                     onClick = {})
                         )
+                        if (viewModel.OCRTextSelected != null) {
+                            val box = viewModel.OCRTextSelected!!.rect
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val path = Path().apply {
+                                    addRect(
+                                        rect = Rect(
+                                            left = box.left,
+                                            right = box.right,
+                                            top = box.top,
+                                            bottom = box.bottom
+                                        )
+                                    )
+                                }
+                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+                            }
+                        }
+//                        val test = viewModel.OCRTextList
+//                        for (text in test) {
+//                            val box = text.rect
+//                            Canvas(modifier = Modifier.fillMaxSize()) {
+//                                val path = Path().apply {
+//                                    addRect(
+//                                        rect = Rect(
+//                                            left = box.left,
+//                                            right = box.right,
+//                                            top = box.top,
+//                                            bottom = box.bottom
+//                                        )
+//                                    )
+//                                }
+//                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+//                            }
+//                        }
                     }
                 }
                 else {
@@ -219,22 +249,6 @@ fun ImageScreen(
                         tint = Color.White,
                         modifier = Modifier.size(30.dp)
                     )
-                }
-            }
-            if (viewModel.textRectSelected != null) {
-                val box = viewModel.textRectSelected!!.rect
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val path = Path().apply {
-                        addRect(
-                            rect = Rect(
-                                left = box.left,
-                                right = box.right,
-                                top = box.top,
-                                bottom = box.bottom
-                            )
-                        )
-                    }
-                    drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
                 }
             }
         }

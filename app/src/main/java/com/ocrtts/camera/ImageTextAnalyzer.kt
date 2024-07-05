@@ -8,35 +8,48 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.ocrtts.type.TextRect
+import com.ocrtts.type.OCRText
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 private const val TAG = "ImageTextRecognitionAnalyzer"
 
-suspend fun analyzeOnline(image: Bitmap) {
+
+suspend fun analyzeOCR(image: Bitmap): MutableList<OCRText> {
+    // do online analysis if internet is online, otherwise offline
+    val textRectList = analyzeOCROffline(InputImage.fromBitmap(image, 0), false)
+    for (textRect in textRectList) {
+        Log.i(TAG + "test", textRect.text + " | " + textRect.language)
+        Log.i(TAG + "test", textRect.rect.top.toString() + " | " + textRect.rect.bottom.toString() + " | " + textRect.rect.left.toString() + " | " + textRect.rect.right.toString())
+    }
+    return textRectList
+}
+
+suspend fun analyzeOCROnline(image: Bitmap) {
 
 }
 
 
-suspend fun analyzeOffline(
+suspend fun analyzeOCROffline(
     image: InputImage,
-//    addTextRect: ((List<TextRect>) -> Unit)?,
     onlyDetect: Boolean
-): Pair<Boolean, Text?> {
+): MutableList<OCRText> {
     val englishRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     val chineseRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
     var isSuccess = false
-    var text: Text? = null
+    val ocrTextList = mutableListOf<OCRText>()
 
     suspendCoroutine { continuation ->
         englishRecognizer.process(image)
             .addOnSuccessListener { visionText ->
                 if (visionText.text.isNotBlank()){
                     isSuccess = true
-                    text = visionText
-//                    val textList = rotate(visionText.textBlocks, 90)
-//                    addTextRect!!(textList)
+                    if (!onlyDetect) {
+                        ocrTextList.addAll(convertToOCRText(visionText.textBlocks,  "English"))
+                    }
+                    else {
+                        ocrTextList.add(OCRText())
+                    }
                 }
             }
             .addOnFailureListener { e ->
@@ -48,111 +61,81 @@ suspend fun analyzeOffline(
     }
 
     if (onlyDetect && isSuccess) {
-        return true to text
+        return ocrTextList
     }
 
-    suspendCoroutine { continuation ->
-        chineseRecognizer.process(image)
-            .addOnSuccessListener { visionText ->
-                if (visionText.text.isNotBlank()){
-                    isSuccess = true
-                    text = visionText
-//                    val textList = rotate(visionText.textBlocks, 90)
-//                    addTextRect!!(textList)
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error processing image for text recognition: ${e.message}")
-            }
-            .addOnCompleteListener {
-                continuation.resume(Unit)
-            }
-    }
-
-//    if (!isSuccess) {
-//        // maybe put the image only after it finished?
-//        // also maybe if cannot detect text then need to tell user and go back to camera?
+    // commented out because the chineseRecognizer recognizes the english/latin letter as well (I thought it only recognizes chinese character), so it's like double scanning here
+//    suspendCoroutine { continuation ->
+//        chineseRecognizer.process(image)
+//            .addOnSuccessListener { visionText ->
+//                if (visionText.text.isNotBlank()){
+//                    OCRTextList.addAll(convertToAnalyzedText(visionText.textBlocks, 55, "Chinese"))
+//                }
+//            }
+//            .addOnFailureListener { e ->
+//                Log.e(TAG, "Error processing image for text recognition: ${e.message}")
+//            }
+//            .addOnCompleteListener {
+//                continuation.resume(Unit)
+//            }
 //    }
-
-    return isSuccess to text
+    return ocrTextList
 }
 
-fun rotate(
+fun convertToOCRText(
     textBlocks: List<Text.TextBlock>,
-    rotation: Int
-): List<TextRect> {
-    Log.w("Rotation", rotation.toString())
-    val updatedTextRects: MutableList<TextRect> = mutableListOf()
+    language: String
+): List<OCRText> {
+    val updatedOCRTexts: MutableList<OCRText> = mutableListOf()
 
-    when (rotation) {
-        180 -> {
-            modifyRectSize(
-                textBlocks,
-                updatedTextRects,
-                top = 2.25f,
-                bottom = 2.325f,
-                left = 2.1f,
-                right = 2.3f
-            )
-        }
-
-        270 -> {
-            modifyRectSize(
-                textBlocks,
-                updatedTextRects,
-                top = 2.25f,
-                bottom = 2.275f,
-                left = 2.025f,
-                right = 2.3f
-            )
-        }
-
-        0 -> {
-            modifyRectSize(
-                textBlocks,
-                updatedTextRects,
-                top = 2.225f,
-                bottom = 2.275f,
-                left = 2.2f,
-                right = 2.3f
-            )
-        }
-
-        else -> {
-            modifyRectSize(
-                textBlocks,
-                updatedTextRects,
-                top = 2.2f,
-                bottom = 2.25f,
-                left = 1.85f,
-                right = 2.25f
-            )
-        }
-    }
-    return updatedTextRects
-}
-
-private fun modifyRectSize(
-    textBlocks: List<Text.TextBlock>,
-    updatedTextRects: MutableList<TextRect>,
-    top: Float = 1f,
-    bottom: Float = 1f,
-    left: Float = 1f,
-    right: Float = 1f
-) {
     for (text in textBlocks) {
         if (text.boundingBox != null) {
             val textBlock = text.boundingBox!!
-            updatedTextRects.add(
-                TextRect(
+            Log.i(TAG + "test", text.text)
+            Log.i(TAG + "test", textBlock.top.toString() + " | " + textBlock.bottom.toString() + " | " + textBlock.left.toString() + " | " + textBlock.right.toString())
+            updatedOCRTexts.add(
+                OCRText(
                     text.text, Rect(
-                        top = textBlock.top.toFloat() * top,
-                        bottom = textBlock.bottom.toFloat() * bottom,
-                        left = textBlock.left.toFloat() * left,
-                        right = textBlock.right.toFloat() * right,
-                    )
+                        // TODO: find a way to align the box with the text
+                        top = (textBlock.bottom.toFloat() - (textBlock.bottom.toFloat() * textBlock.height() / 1000f)) * 0.675f,
+                        bottom = textBlock.bottom.toFloat() * 0.675f,
+                        left = (textBlock.right.toFloat() - (textBlock.right.toFloat() * textBlock.width() / 1200f)) * 0.475f,
+                        right = textBlock.right.toFloat() * 0.5175f,
+                    ), language
                 )
             )
+//
+//            val imageWidth = _image!!.width
+//            val imageHeight = _image!!.height
+//            val viewWidth = _size.width
+//            val viewHeight = _size.height
+//
+//            var scaledWidth: Int
+//            var scaledHeight: Int
+//            if (imageWidth*viewHeight <= imageHeight*viewWidth) {
+//
+//                //rescaled width and height of image within ImageView
+//                scaledWidth = (imageWidth*viewHeight)/imageHeight;
+//                scaledHeight = viewHeight;
+//            }
+//            else {
+//                //rescaled width and height of image within ImageView
+//                scaledWidth = viewWidth;
+//                scaledHeight = (imageHeight*viewWidth)/imageWidth;
+//            }
+//
+//            updatedOCRTexts.add(
+//                OCRText(
+//                    text.text, Rect(
+//                        top = textBlock.top / getSystem().displayMetrics.density * 1.5f,
+//                        bottom = textBlock.bottom / getSystem().displayMetrics.density * 1.5f,
+//                        left = textBlock.left / getSystem().displayMetrics.density * 1.5f,
+//                        right = textBlock.right / getSystem().displayMetrics.density * 1.5f,
+//                    ), language
+//                )
+//            )
         }
     }
+
+    return updatedOCRTexts
 }

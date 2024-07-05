@@ -36,8 +36,8 @@ class CameraTextAnalyzer(private val onTextRecognized: (Boolean) -> Unit, privat
 
             try {
                 withContext(Dispatchers.IO) {
-                    val (hasText, _) = analyzeOffline(inputImage, true)
-                    onTextRecognized(hasText)
+                    val textRect = analyzeOCROffline(inputImage, true)
+                    onTextRecognized(textRect.isNotEmpty())
                     image.close()
                     isLocked = false
 //                    suspendCoroutine { continuation ->

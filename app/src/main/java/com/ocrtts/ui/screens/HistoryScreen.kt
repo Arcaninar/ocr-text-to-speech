@@ -12,12 +12,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.ocrtts.history.getHistory
+import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.screens.Screens
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import java.io.File
@@ -29,17 +30,19 @@ import java.util.Locale
 fun HistoryScreen(
     navController: NavController,
     sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier
 ) {
-    val imageHistory = getHistory(LocalContext.current)
+    val imageHistory by dataStoreManager.imageHistory.collectAsState(initial = emptySet())
+    val sortedImageHistory = imageHistory.map { File(it) }.sortedByDescending { it.lastModified() }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(imageHistory) { image ->
-            val file = File(image.value as String)
+        items(sortedImageHistory) { file ->
+//            val file = File(image.value as String)
             Log.d("HistoryScreen", "Processing file: ${file.absolutePath}, exists: ${file.exists()}")
 
             if (file.exists()) {
