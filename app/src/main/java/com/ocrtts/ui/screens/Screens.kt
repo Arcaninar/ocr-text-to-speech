@@ -10,4 +10,5 @@ sealed class Screens(val route: String) {
     data object CameraScreen : Screens("camera")
     data object ImageScreen : Screens("image")
     data object HistoryScreen : Screens("history")
+    data object TTSTestingScreen : Screens("testing")
 }

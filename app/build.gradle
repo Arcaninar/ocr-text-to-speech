@@ -57,6 +57,10 @@ android {
 
 dependencies {
 
+    // build.gradle
+
+    implementation group: 'com.microsoft.cognitiveservices.speech', name: 'client-sdk', version: "1.38.0", ext: "jar"
+
 
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.2.0")
 
