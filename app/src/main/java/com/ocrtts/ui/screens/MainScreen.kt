@@ -6,6 +6,7 @@ import HistoryScreen
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
@@ -20,6 +21,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.ocrtts.ui.components.DataStoreManager
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 
 //TODO
@@ -30,11 +32,14 @@ private const val TAG="MainScreen"
 @Composable
 fun MainScreen() {
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
-    Log.i(TAG,cameraPermissionState.status.isGranted.toString())
+    Log.i(TAG, cameraPermissionState.status.isGranted.toString())
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
     val startingScreen = if (cameraPermissionState.status.isGranted) Screens.HomeScreen else Screens.PermissionRequestScreen
+
     NavHost(navController = navController, startDestination = startingScreen.route) {
-        composable(Screens.HomeScreen.route) { 
+        composable(Screens.HomeScreen.route) {
             HomeScreen(navController = navController)
         }
         composable(Screens.PermissionRequestScreen.route) {
@@ -43,7 +48,7 @@ fun MainScreen() {
         navigation(startDestination = Screens.CameraScreen.route, route = Screens.MainCameraScreen.route) {
             composable(Screens.CameraScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                CameraScreen(navController = navController, sharedViewModel = sharedViewModel)
+                CameraScreen(navController = navController, sharedViewModel = sharedViewModel, dataStoreManager = dataStoreManager)
             }
             composable(
                 route = "${Screens.ImageScreen.route}?fileName={fileName}",
@@ -56,15 +61,14 @@ fun MainScreen() {
                 val fileName = it.arguments?.getString("fileName")
                 ImageScreen(fileName = fileName!!, sharedViewModel = sharedViewModel, navController = navController)
             }
-            composable(Screens.HistoryScreen.route) {
-                val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                HistoryScreen(navController = navController, sharedViewModel = sharedViewModel)
-            }
         }
-
+        composable(Screens.HistoryScreen.route) {
+            HistoryScreen(navController = navController, dataStoreManager = dataStoreManager)
+        }
     }
-    Log.i(TAG,"triggered")
+    Log.i(TAG, "triggered")
 }
+
 
 @Composable
 inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(

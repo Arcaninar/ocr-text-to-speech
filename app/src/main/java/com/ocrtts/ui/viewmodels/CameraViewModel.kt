@@ -14,6 +14,7 @@ class CameraViewModel : ViewModel() {
 //    private val _recognizedText = MutableStateFlow<String>("")
 //    val recognizedText = _recognizedText.asStateFlow()
 
+
     var recognizedText: MutableState<Boolean> = mutableStateOf(false)
         private set
 

@@ -106,4 +106,20 @@ dependencies {
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
+    // Preferences DataStore (SharedPreferences like APIs)
+    dependencies {
+        implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+        // optional - RxJava2 support
+        implementation("androidx.datastore:datastore-preferences-rxjava2:1.1.1")
+
+        // optional - RxJava3 support
+        implementation("androidx.datastore:datastore-preferences-rxjava3:1.1.1")
+    }
+
+    // Alternatively - use the following artifact without an Android dependency.
+    dependencies {
+        implementation("androidx.datastore:datastore-preferences-core:1.1.1")
+    }
+
 }

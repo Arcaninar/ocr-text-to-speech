@@ -1,5 +1,7 @@
 package com.ocrtts.camera
 
+import android.graphics.Point
+import android.graphics.Rect
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
@@ -66,28 +68,32 @@ const val TAG = "TextRecognitionAnalyzer"
 
 class TextAnalyzer(private val onTextRecognized: (Text) -> Unit, private val coroutineScope: CoroutineScope) : ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false
+
     override fun analyze(imageProxy: ImageProxy) {
         if (!isLocked) {
-            isLocked=true
+            isLocked = true
             coroutineScope.launch {
                 recognizeText(imageProxy)
             }
-        }
-        else{
+        } else {
             imageProxy.close()
         }
     }
+
     @OptIn(ExperimentalGetImage::class)
     private suspend fun recognizeText(image: ImageProxy) {
         val mediaImage = image.image
         if (mediaImage != null) {
             val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
-            val recognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            val recognizer: TextRecognizer =
+                TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
             try {
                 withContext(Dispatchers.IO) {
                     recognizer.process(inputImage)
                         .addOnSuccessListener { visionText ->
                             onTextRecognized(visionText)
+                            val cornerPoints = getAllCornerPoints(visionText)
+                            logCornerPoints(cornerPoints)
                         }
                         .addOnFailureListener { e ->
                             Log.e(TAG, "Error processing image for text recognition: ${e.message}")
@@ -104,6 +110,77 @@ class TextAnalyzer(private val onTextRecognized: (Text) -> Unit, private val cor
         } else {
             Log.w(TAG, "No media image available for text recognition")
             image.close() // Close imageProxy if mediaImage is null
+        }
+    }
+
+    fun getAllCornerPoints(recognizedText: Text): List<Point> {
+        val cornerPoints = mutableListOf<Point>()
+
+        for (textBlock in recognizedText.textBlocks) {
+            // Add corner points of the text block
+            textBlock.cornerPoints?.let { cornerPoints.addAll(it) }
+
+            for (line in textBlock.lines) {
+                // Add corner points of the line
+                line.cornerPoints?.let { cornerPoints.addAll(it) }
+
+                for (element in line.elements) {
+                    // Add corner points of the element
+                    element.cornerPoints?.let { cornerPoints.addAll(it) }
+                }
+            }
+        }
+
+        return cornerPoints
+    }
+
+    private fun getTextRects(recognizedText: Text): List<Rect> {
+        val rects = mutableListOf<Rect>()
+
+        for (textBlock in recognizedText.textBlocks) {
+            val rect = getBoundingRect(textBlock.cornerPoints)
+            rect?.let { rects.add(it) }
+
+            for (line in textBlock.lines) {
+                val rect = getBoundingRect(line.cornerPoints)
+                rect?.let { rects.add(it) }
+
+                for (element in line.elements) {
+                    val rect = getBoundingRect(element.cornerPoints)
+                    rect?.let { rects.add(it) }
+                }
+            }
+        }
+
+        return rects
+    }
+
+    private fun getBoundingRect(cornerPoints: Array<Point>?): Rect? {
+        if (cornerPoints == null || cornerPoints.isEmpty()) return null
+
+        var minX = cornerPoints[0].x
+        var minY = cornerPoints[0].y
+        var maxX = cornerPoints[0].x
+        var maxY = cornerPoints[0].y
+
+        for (point in cornerPoints) {
+            if (point.x < minX) minX = point.x
+            if (point.y < minY) minY = point.y
+            if (point.x > maxX) maxX = point.x
+            if (point.y > maxY) maxY = point.y
+        }
+
+        return Rect(minX, minY, maxX, maxY)
+    }
+
+    /**
+     * Logs the corner points.
+     *
+     * @param cornerPoints The list of corner points to log.
+     */
+    fun logCornerPoints(cornerPoints: List<Point>) {
+        for ((index, point) in cornerPoints.withIndex()) {
+            Log.d(TAG, "Corner Point $index: (${point.x}, ${point.y})")
         }
     }
 }

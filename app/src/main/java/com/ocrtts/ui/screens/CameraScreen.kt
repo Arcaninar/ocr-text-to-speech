@@ -44,11 +44,13 @@ import androidx.navigation.NavController
 import com.ocrtts.R
 import com.ocrtts.camera.TextAnalyzer
 import com.ocrtts.data.TextRect
+import com.ocrtts.ui.components.DataStoreManager
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -66,6 +68,7 @@ private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
 fun CameraScreen(
     navController: NavController,
     sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier,
     viewModel: CameraViewModel = viewModel()
 ) {
@@ -96,19 +99,31 @@ fun CameraScreen(
     BackHandler {
         activity?.finish() // 结束当前Activity
     }
+
     Box(contentAlignment = Alignment.BottomEnd, modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
+
         if (viewModel.recognizedText.value) {
-            NotifyUser(imageCapture = imageCapture, navController = navController, sharedViewModel = sharedViewModel)
+            NotifyUser(
+                imageCapture = imageCapture,
+                navController = navController,
+                sharedViewModel = sharedViewModel,
+                dataStoreManager = dataStoreManager
+            )
         }
     }
 }
-
 @Composable
-fun NotifyUser(imageCapture: ImageCapture, navController: NavController, sharedViewModel: ImageSharedViewModel, modifier: Modifier = Modifier) {
+fun NotifyUser(
+    imageCapture: ImageCapture,
+    navController: NavController,
+    sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
+    modifier: Modifier = Modifier
+) {
     val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
     audio.start()
     Column(
@@ -128,14 +143,27 @@ fun NotifyUser(imageCapture: ImageCapture, navController: NavController, sharedV
         val context = LocalContext.current
         Button(
             onClick = {
-                onClickButton(imageCapture = imageCapture, context = context, navController = navController, sharedViewModel = sharedViewModel)
+                onClickButton(
+                    imageCapture = imageCapture,
+                    context = context,
+                    navController = navController,
+                    sharedViewModel = sharedViewModel,
+                    dataStoreManager = dataStoreManager
+                )
             }) {
             CircleShape
         }
     }
 }
 
-fun onClickButton(imageCapture: ImageCapture, context: Context, navController: NavController, sharedViewModel: ImageSharedViewModel) {
+
+fun onClickButton(
+    imageCapture: ImageCapture,
+    context: Context,
+    navController: NavController,
+    sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager
+) {
     val TAG = "ImageCapture"
     val outputDirectory = context.filesDir
     val photoFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
@@ -146,6 +174,10 @@ fun onClickButton(imageCapture: ImageCapture, context: Context, navController: N
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                 Log.d(TAG, "Photo capture succeeded: ${photoFile.absolutePath}")
+                // Update DataStore with the captured image file
+                CoroutineScope(Dispatchers.IO).launch {
+                    dataStoreManager.addImageToHistory(photoFile.absolutePath)
+                }
                 // Update ViewModel with the captured image file
                 sharedViewModel.addImageToHistory(photoFile)
                 navController.navigate(Screens.ImageScreen.route + "?fileName=${photoFile.absolutePath}")

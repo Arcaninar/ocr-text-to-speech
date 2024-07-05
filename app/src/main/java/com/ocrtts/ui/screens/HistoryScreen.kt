@@ -18,22 +18,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ocrtts.ui.components.DataStoreManager
 import com.ocrtts.ui.screens.Screens
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
 @Composable
 fun HistoryScreen(
     navController: NavController,
-    sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier
 ) {
-    val imageHistory by sharedViewModel.imageHistory.collectAsState()
-
-
-    val sortedImageHistory = imageHistory.sortedByDescending { it.lastModified() }
+    val imageHistory by dataStoreManager.imageHistory.collectAsState(initial = emptySet())
+    val sortedImageHistory = imageHistory.map { File(it) }.sortedByDescending { it.lastModified() }
 
     LazyColumn(
         modifier = modifier
