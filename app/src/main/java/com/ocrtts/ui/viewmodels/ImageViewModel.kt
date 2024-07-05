@@ -36,6 +36,14 @@ class ImageViewModel : ViewModel() {
         rotate(text.textBlocks, 90)
     }
 
+    fun finishedAnalyzing() {
+        isFinishedAnalysing = true
+    }
+
+    fun imageContainsText() {
+        containText = true
+    }
+
     private fun rotate(
         textBlocks: List<Text.TextBlock>,
         rotation: Int

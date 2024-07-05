@@ -9,7 +9,6 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ocrtts.type.TextRect
-import java.io.Serializable
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
