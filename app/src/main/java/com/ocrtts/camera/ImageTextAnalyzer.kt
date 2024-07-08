@@ -8,22 +8,39 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.ocrtts.type.OCRText
+import retrofit2.Retrofit
+import retrofit2.converter.scalars.ScalarsConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.POST
+import retrofit2.http.Query
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 private const val TAG = "ImageTextRecognitionAnalyzer"
 
+//interface OnlineOCRInterface {
+//    @POST("images:annotate")
+//    fun getAnalysedOCRText(@Query("key") key: String, @Body post: String): String
+//}
+//
+//object OnlineOCRInstance {
+//    private val baseUrl = "https://vision.googleapis.com/v1"
+//
+//    private val retrofit = Retrofit.Builder()
+//        .addConverterFactory(ScalarsConverterFactory.create())
+//        .baseUrl(baseUrl)
+//        .build()
+//
+//    val onlineOCR: OnlineOCRInterface by lazy {
+//        retrofit.create(OnlineOCRInterface::class.java)
+//    }
+//}
 
 suspend fun analyzeOCR(image: Bitmap, viewSize: IntSize): MutableList<OCRText> {
     // do online analysis if internet is online, otherwise offline
     val scaleFactor = getScaleFactor(viewSize, IntSize(image.width, image.height))
     val textRectList = analyzeOCROffline(InputImage.fromBitmap(image, 0), false, scaleFactor)
-    for (textRect in textRectList) {
-        Log.i(TAG + "test", textRect.text + " | " + textRect.language)
-        Log.i(TAG + "test", textRect.rect.top.toString() + " | " + textRect.rect.bottom.toString() + " | " + textRect.rect.left.toString() + " | " + textRect.rect.right.toString())
-    }
     return textRectList
 }
 
@@ -33,8 +50,8 @@ fun getScaleFactor(viewSize: IntSize, imageSize: IntSize): Pair<Float, Float> {
     return Pair(widthScale, heightScale)
 }
 
-suspend fun analyzeOCROnline(image: Bitmap) {
-
+fun analyzeOCROnline(image: Bitmap) {
+//    val
 }
 
 
@@ -43,18 +60,16 @@ suspend fun analyzeOCROffline(
     onlyDetect: Boolean,
     scaleFactor: Pair<Float, Float> = Pair(0f, 0f)
 ): MutableList<OCRText> {
-    val englishRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-    val chineseRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
-    var isSuccess = false
+    //chinese text recognizer can detect both english and chinese words
+    val textRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
     val ocrTextList = mutableListOf<OCRText>()
 
     suspendCoroutine { continuation ->
-        englishRecognizer.process(image)
+        textRecognizer.process(image)
             .addOnSuccessListener { visionText ->
                 if (visionText.text.isNotBlank()){
-                    isSuccess = true
                     if (!onlyDetect) {
-                        ocrTextList.addAll(convertToOCRText(visionText.textBlocks,  "English", scaleFactor))
+                        ocrTextList.addAll(convertToOCRText(visionText.textBlocks, scaleFactor))
                     }
                     else {
                         ocrTextList.add(OCRText())
@@ -69,31 +84,11 @@ suspend fun analyzeOCROffline(
             }
     }
 
-    if (onlyDetect && isSuccess) {
-        return ocrTextList
-    }
-
-    // commented out because the chineseRecognizer recognizes the english/latin letter as well (I thought it only recognizes chinese character), so it's like double scanning here
-//    suspendCoroutine { continuation ->
-//        chineseRecognizer.process(image)
-//            .addOnSuccessListener { visionText ->
-//                if (visionText.text.isNotBlank()){
-//                    OCRTextList.addAll(convertToAnalyzedText(visionText.textBlocks, 55, "Chinese"))
-//                }
-//            }
-//            .addOnFailureListener { e ->
-//                Log.e(TAG, "Error processing image for text recognition: ${e.message}")
-//            }
-//            .addOnCompleteListener {
-//                continuation.resume(Unit)
-//            }
-//    }
     return ocrTextList
 }
 
 fun convertToOCRText(
     textBlocks: List<Text.TextBlock>,
-    language: String,
     scaleFactor: Pair<Float, Float>
 ): List<OCRText> {
     val updatedOCRTexts: MutableList<OCRText> = mutableListOf()
@@ -105,12 +100,13 @@ fun convertToOCRText(
             val heightScaleFactor = scaleFactor.second
             updatedOCRTexts.add(
                 OCRText(
-                    text.text, Rect(
+                    text.text,
+                    Rect(
                         top = textBlock.top.toFloat() * heightScaleFactor,
                         bottom = textBlock.bottom.toFloat() * heightScaleFactor,
                         left = textBlock.left.toFloat() * widthScaleFactor,
                         right = textBlock.right.toFloat() * widthScaleFactor,
-                    ), language
+                    )
                 )
             )
         }
