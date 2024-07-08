@@ -61,6 +61,11 @@ class AzureTextSynthesis(voice: String) {
         createSynthesizer(voice)
     }
 
+    fun updateVoice(voice: String){
+        speechConfig?.speechSynthesisVoiceName = voice
+        Log.i("generate", "Dynamic updates!!")
+    }
+
     private fun createSynthesizer(voice: String) {
         try {
             ttsThread = Executors.newSingleThreadExecutor()

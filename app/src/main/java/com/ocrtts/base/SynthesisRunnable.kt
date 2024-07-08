@@ -92,6 +92,7 @@ class SynthesisRunnable(
                 audioTrack.playbackParams = audioTrack.playbackParams.setSpeed(this.speed)
             }
             audioTrack.play()
+            Log.i("check", "audio start playing")
 
             lock.withLock {
                 stopState = false

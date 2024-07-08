@@ -1,5 +1,6 @@
 package com.ocrtts.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,6 +34,8 @@ import com.ocrtts.base.AzureTextSynthesis
 
 @Composable
 fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier){
+    //default language
+    var azureTTS = remember { AzureTextSynthesis("en-GB-SoniaNeural") }
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -49,19 +54,25 @@ fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier
                 TriggerButton(
                     text = "en",
                     iconId = R.drawable.ic_launcher_foreground,
-                    onClick = { synthesizeAndPlayText("Hi I am Pathfinder!", "en-US") }
+                    onClick = {
+                        azureTTS = AzureTextSynthesis("en-GB-SoniaNeural")
+                        synthesizeAndPlayText("Hi I am Pathfinder! Defines an offset line that can be used by parent layouts to align and position their children. Text baselines are representative examples of AlignmentLines. For example, they can be used by Row, to align its children by baseline, or by paddingFrom to achieve a layout with a specific distance from the top to the baseline of the text content. AlignmentLines can be understood as an abstraction over text baselines.", "en-US", 1.0f, azureTTS) }
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 TriggerButton(
                     text = "zh-HK",
                     iconId = R.drawable.ic_launcher_foreground,
-                    onClick = { synthesizeAndPlayText("嗨，我是探路者！", "zh-HK") }
+                    onClick = {
+                        azureTTS = AzureTextSynthesis("zh-HK-HiuMaanNeural")
+                        synthesizeAndPlayText("你好，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。例如， 可以使用它们来Row按基线对齐其子布局，或者 来paddingFrom实现从顶部到文本内容基线的特定距离的布局。AlignmentLines 可以理解为对文本基线的抽象。", "zh-HK", 1.0f, azureTTS) }
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 TriggerButton(
                     text = "zh-TW",
                     iconId = R.drawable.ic_launcher_foreground,
-                    onClick = { synthesizeAndPlayText("嗨，我是探路者！", "zh-TW") }
+                    onClick = {
+                        azureTTS = AzureTextSynthesis("zh-TW-HsiaoChenNeural")
+                        synthesizeAndPlayText("嗨，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。例如， 可以使用它们来Row按基线对齐其子布局，或者 来paddingFrom实现从顶部到文本内容基线的特定距离的布局。AlignmentLines 可以理解为对文本基线的抽象。", "zh-TW", 1.0f, azureTTS) }
                 )
             }
 //            Button(
@@ -124,12 +135,22 @@ fun TriggerButton(text: String, iconId: Int, onClick: () -> Unit, modifier: Modi
     }
 }
 
+//fun TTSLangSelector(){
+// still in progressing
+//}
 
-fun synthesizeAndPlayText(text: String, language: String) {
-    val tts = AzureTextSynthesis()
 
-    tts.language = language
-    tts.text = text
+fun synthesizeAndPlayText(text: String, language: String, speed: Float, tts: AzureTextSynthesis) {
+    val voice = when(language){
+        "en-US" -> "en-GB-SoniaNeural"
+        "zh-HK" -> "zh-HK-HiuMaanNeural"
+        "zh-TW" -> "zh-TW-HsiaoChenNeural"
+        else -> "en-GB-SoniaNeural"
+    }
+    Log.i("check", "language change")
 
-    tts.synthesizeAndPlay()
+    //update and play
+    tts.updateVoice(voice)
+    tts.startPlaying(text, speed)
+
 }
