@@ -10,6 +10,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
@@ -91,8 +92,10 @@ fun CameraScreen(
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture, imageAnalysis)
         preview.setSurfaceProvider(previewView.surfaceProvider)
+        val viewPort = previewView.viewPort
+        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort!!).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
+        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
     }
     BackHandler {
         activity?.finish() // 结束当前Activity
@@ -100,9 +103,11 @@ fun CameraScreen(
     Box(contentAlignment = Alignment.BottomEnd, modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = { previewView },
-            modifier = Modifier.fillMaxSize().onGloballyPositioned {
-                sharedViewModel.updateSize(it.size)
-            }
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    sharedViewModel.updateSize(coordinates.size)
+                }
         )
         if (viewModel.recognizedText) {
             NotifyUser(
