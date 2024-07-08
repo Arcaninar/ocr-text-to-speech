@@ -1,6 +1,5 @@
 package com.ocrtts.ui.screens
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.media.MediaPlayer
@@ -10,12 +9,11 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -42,13 +41,15 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.camera.TextAnalyzer
-import com.ocrtts.data.TextRect
+import com.ocrtts.camera.CameraTextAnalyzer
+import com.ocrtts.history.DataStoreManager
+import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -66,6 +67,7 @@ private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
 fun CameraScreen(
     navController: NavController,
     sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier,
     viewModel: CameraViewModel = viewModel()
 ) {
@@ -82,7 +84,7 @@ fun CameraScreen(
             .build()
             .also { analysis ->
                 val coroutineScope = CoroutineScope(Job() + Dispatchers.Main)
-                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), TextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
+                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), CameraTextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
             }
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -90,8 +92,10 @@ fun CameraScreen(
     LaunchedEffect(lensFacing) {
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture, imageAnalysis)
         preview.setSurfaceProvider(previewView.surfaceProvider)
+        val viewPort = previewView.viewPort
+        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort!!).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
+        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
     }
     BackHandler {
         activity?.finish() // 结束当前Activity
@@ -99,16 +103,25 @@ fun CameraScreen(
     Box(contentAlignment = Alignment.BottomEnd, modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = { previewView },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    sharedViewModel.updateSize(coordinates.size)
+                }
         )
-        if (viewModel.recognizedText.value) {
-            NotifyUser(imageCapture = imageCapture, navController = navController, sharedViewModel = sharedViewModel)
+        if (viewModel.recognizedText) {
+            NotifyUser(
+                imageCapture = imageCapture,
+                navController = navController,
+                sharedViewModel = sharedViewModel,
+                dataStoreManager = dataStoreManager
+            )
         }
     }
 }
 
 @Composable
-fun NotifyUser(imageCapture: ImageCapture, navController: NavController, sharedViewModel: ImageSharedViewModel, modifier: Modifier = Modifier) {
+fun NotifyUser(imageCapture: ImageCapture, navController: NavController, sharedViewModel: ImageSharedViewModel, dataStoreManager: DataStoreManager, modifier: Modifier = Modifier) {
     val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
     audio.start()
     Column(
@@ -128,14 +141,20 @@ fun NotifyUser(imageCapture: ImageCapture, navController: NavController, sharedV
         val context = LocalContext.current
         Button(
             onClick = {
-                onClickButton(imageCapture = imageCapture, context = context, navController = navController, sharedViewModel = sharedViewModel)
+                onClickButton(
+                    imageCapture = imageCapture,
+                    context = context,
+                    navController = navController,
+                    sharedViewModel = sharedViewModel,
+                    dataStoreManager = dataStoreManager
+                )
             }) {
             CircleShape
         }
     }
 }
 
-fun onClickButton(imageCapture: ImageCapture, context: Context, navController: NavController, sharedViewModel: ImageSharedViewModel) {
+fun onClickButton(imageCapture: ImageCapture, context: Context, navController: NavController, sharedViewModel: ImageSharedViewModel, dataStoreManager: DataStoreManager) {
     val TAG = "ImageCapture"
     val outputDirectory = context.filesDir
     val photoFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
@@ -145,10 +164,14 @@ fun onClickButton(imageCapture: ImageCapture, context: Context, navController: N
     imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                Log.d(TAG, "Photo capture succeeded: ${photoFile.absolutePath}")
+                val path = photoFile.absolutePath
+                Log.d(TAG, "Photo capture succeeded: $path")
                 // Update ViewModel with the captured image file
-                sharedViewModel.addImageToHistory(photoFile)
-                navController.navigate(Screens.ImageScreen.route + "?fileName=${photoFile.absolutePath}")
+                CoroutineScope(Dispatchers.IO).launch {
+                    dataStoreManager.addImageToHistory(photoFile.absolutePath)
+                }
+                sharedViewModel.setFileName(path)
+                navController.navigate(Screens.ImageScreen.route)
             }
 
             override fun onError(exception: ImageCaptureException) {
@@ -159,9 +182,9 @@ fun onClickButton(imageCapture: ImageCapture, context: Context, navController: N
 }
 
 @Composable
-fun OverlayTexts(textRects: List<TextRect>, modifier: Modifier=Modifier) {
+fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier=Modifier) {
     Box(modifier = modifier) {
-        textRects.forEach { textRect ->
+        OCRTexts.forEach { textRect ->
             Box(
                 modifier = Modifier
                     .offset(
@@ -172,8 +195,8 @@ fun OverlayTexts(textRects: List<TextRect>, modifier: Modifier=Modifier) {
                         width = (textRect.rect.right - textRect.rect.left).dp,
                         height = (textRect.rect.bottom - textRect.rect.top).dp
                     )
-                    .background(Color.Transparent)
-                    .clickable { /* Handle text selection */ }
+                    .background(Color.Yellow.copy(alpha = 0.5f))
+//                    .clickable { /* Handle text selection */ }
             ) {
                 Text(text = textRect.text, color = Color.White)
             }

@@ -1,6 +1,6 @@
-import android.graphics.Matrix
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -18,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.screens.Screens
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -28,12 +30,11 @@ import java.util.Locale
 fun HistoryScreen(
     navController: NavController,
     sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier
 ) {
-    val imageHistory by sharedViewModel.imageHistory.collectAsState()
-
-
-    val sortedImageHistory = imageHistory.sortedByDescending { it.lastModified() }
+    val imageHistory by dataStoreManager.imageHistory.collectAsState(initial = emptySet())
+    val sortedImageHistory = imageHistory.map { File(it) }.sortedByDescending { it.lastModified() }
 
     LazyColumn(
         modifier = modifier
@@ -41,21 +42,23 @@ fun HistoryScreen(
             .padding(16.dp)
     ) {
         items(sortedImageHistory) { file ->
+//            val file = File(image.value as String)
             Log.d("HistoryScreen", "Processing file: ${file.absolutePath}, exists: ${file.exists()}")
 
             if (file.exists()) {
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                val rotatedBitmap = bitmap.rotate(90f) // Rotate the bitmap
+//                val rotatedBitmap = bitmap.rotate(90f) // Rotate the bitmap
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp)
                         .clickable {
-                            navController.navigate("${Screens.ImageScreen.route}?fileName=${file.absolutePath}")
+                            sharedViewModel.setFileName(file.absolutePath)
+                            navController.navigate(Screens.ImageScreen.route)
                         }
                 ) {
                     Image(
-                        bitmap = rotatedBitmap.asImageBitmap(),
+                        bitmap = bitmap.asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
