@@ -30,14 +30,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,8 +78,12 @@ fun ImageScreen(
     viewModel: ImageViewModel = viewModel()
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val coroutineScope = rememberCoroutineScope()
-//    var image: Bitmap? by remember { mutableStateOf(null) }
+
+    val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
+    val file = File(fileName)
+    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+
+    val viewSize by sharedViewModel.size.collectAsStateWithLifecycle()
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collectLatest { interaction ->
@@ -120,13 +122,9 @@ fun ImageScreen(
         }
     }
 
-    val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
-    val file = File(fileName)
-    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
-            val textRectList = analyzeOCR(image = bitmap)
+            val textRectList = analyzeOCR(image = bitmap, viewSize = viewSize)
 
             viewModel.finishedAnalyzing()
             if (textRectList.isNotEmpty()) {
@@ -136,68 +134,25 @@ fun ImageScreen(
         }
     }
 
-//    LaunchedEffect(fileName, sharedViewModel.sharedImageProxy) {
-//        val imageProxy = sharedViewModel.sharedImageProxy.value
-//        Log.d("ImageScreen", "sharedImageProxy value: $imageProxy")
-//        if (fileName.isBlank()) {
-//            if (imageProxy != null) {
-//                TextAnalyzer(viewModel::setRecognizedText, coroutineScope).analyze(imageProxy)
-//                val bitmap = imageToBitmap(imageProxy.image!!)
-//                image = rotateBitmap(bitmap, 90f)
-//            } else {
-//                Log.w("ImageScreen", "sharedImageProxy is null")
-//            }
-//        } else {
-//            val bitmap = BitmapFactory.decodeFile(fileName)
-//            bitmap?.let {
-//                image = rotateBitmap(it, 90f)
-//            }
-//        }
-//
-//        if (image == null) {
-//            Log.w("ImageScreen", "No image found")
-//        }
-//    }
-
-
-//    image?.let {
-        Surface(modifier = modifier.background(Color.Transparent)) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (viewModel.isFinishedAnalysing) {
-                    if (!viewModel.containText) {
-                        Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
-                    }
-                    else {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Image",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable(
-                                    interactionSource = interactionSource,
-                                    indication = null,
-                                    onClick = {})
-                        )
-                        if (viewModel.OCRTextSelected != null) {
-                            val box = viewModel.OCRTextSelected!!.rect
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val path = Path().apply {
-                                    addRect(
-                                        rect = Rect(
-                                            left = box.left,
-                                            right = box.right,
-                                            top = box.top,
-                                            bottom = box.bottom
-                                        )
-                                    )
-                                }
-                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-                            }
-                        }
-//                        val test = viewModel.OCRTextList
-//                        for (text in test) {
-//                            val box = text.rect
+    Surface(modifier = modifier.background(Color.Transparent)) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (viewModel.isFinishedAnalysing) {
+                if (!viewModel.containText) {
+                    Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
+                }
+                else {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                                onClick = {})
+                    )
+//                        if (viewModel.OCRTextSelected != null) {
+//                            val box = viewModel.OCRTextSelected!!.rect
 //                            Canvas(modifier = Modifier.fillMaxSize()) {
 //                                val path = Path().apply {
 //                                    addRect(
@@ -212,47 +167,63 @@ fun ImageScreen(
 //                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
 //                            }
 //                        }
+                    val test = viewModel.OCRTextList
+                    for (text in test) {
+                        val box = text.rect
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val path = Path().apply {
+                                addRect(
+                                    rect = Rect(
+                                        left = box.left,
+                                        right = box.right,
+                                        top = box.top,
+                                        bottom = box.bottom
+                                    )
+                                )
+                            }
+                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+                        }
                     }
                 }
-                else {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .width(64.dp)
-                            .align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.secondary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                }
-                IconButton(
-                    onClick = { navController.navigate(Screens.CameraScreen.route) },
+            }
+            else {
+                CircularProgressIndicator(
                     modifier = Modifier
-                        .size(75.dp)
-                        .align(Alignment.TopStart)
-                        .padding(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Back to video",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(
-                    onClick = { navController.navigate(Screens.HistoryScreen.route) },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.history),
-                        contentDescription = "History Icon",
-                        tint = Color.White,
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
+                        .width(64.dp)
+                        .align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+            IconButton(
+                onClick = { navController.navigate(Screens.CameraScreen.route) },
+                modifier = Modifier
+                    .size(75.dp)
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "Back to video",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            IconButton(
+                onClick = { navController.navigate(Screens.HistoryScreen.route) },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.history),
+                    contentDescription = "History Icon",
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
             }
         }
-//    }
+    }
 }
 
 
