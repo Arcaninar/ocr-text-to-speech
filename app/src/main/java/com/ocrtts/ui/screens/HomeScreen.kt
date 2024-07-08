@@ -85,5 +85,18 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 modifier = Modifier.size(30.dp)
             )
         }
+
+        IconButton(
+            onClick = { navController.navigate(Screens.TTSTestingScreen.route) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_debug),
+                contentDescription = "TTSTestingScreen",
+                tint = Color.White,
+                modifier = Modifier.size(30.dp))
+        }
     }
 }

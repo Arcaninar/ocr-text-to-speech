@@ -23,6 +23,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import androidx.compose.ui.platform.LocalContext
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
@@ -31,6 +32,7 @@ private const val TAG="MainScreen"
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current     //添加network选择器的地方
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     Log.i(TAG,cameraPermissionState.status.isGranted.toString())
     val context = LocalContext.current
@@ -43,6 +45,9 @@ fun MainScreen() {
         }
         composable(Screens.PermissionRequestScreen.route) {
             PermissionRequestScreen(navController = navController, cameraPermissionState = cameraPermissionState)
+        }
+        composable(Screens.TTSTestingScreen.route){
+            TTSTestingScreen(navController = navController)
         }
         navigation(startDestination = Screens.CameraScreen.route, route = Screens.MainCameraScreen.route) {
             composable(Screens.CameraScreen.route) {
@@ -58,7 +63,6 @@ fun MainScreen() {
                 HistoryScreen(navController = navController, sharedViewModel = sharedViewModel, dataStoreManager = dataStoreManager)
             }
         }
-
     }
     Log.i(TAG,"triggered")
 }
