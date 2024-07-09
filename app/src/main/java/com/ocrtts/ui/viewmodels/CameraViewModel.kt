@@ -1,21 +1,22 @@
 package com.ocrtts.ui.viewmodels
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 const val TAG="MainViewModel"
 class CameraViewModel : ViewModel() {
-//    private val _recognizedText = MutableStateFlow<String>("")
-//    val recognizedText = _recognizedText.asStateFlow()
+    private val _isRecognizedText = MutableStateFlow(false)
+    val isRecognizedText = _isRecognizedText.asStateFlow()
 
-    var recognizedText by mutableStateOf(false)
-        private set
+    private val _hasTextBefore = MutableStateFlow(false)
+    val hasTextBefore = _hasTextBefore.asStateFlow()
 
     fun updateRecognizedText(value: Boolean) {
-//        _recognizedText.value = text
-//        Log.i(TAG,text)
-        recognizedText = value
+        _isRecognizedText.value = value
+    }
+
+    fun updateHasText(value: Boolean) {
+        _hasTextBefore.value = value
     }
 }

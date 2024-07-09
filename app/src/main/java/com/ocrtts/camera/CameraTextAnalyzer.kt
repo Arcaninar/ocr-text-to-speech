@@ -8,10 +8,12 @@ import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TAG = "CameraTextRecognitionAnalyzer"
+private const val delayTime = 1_000L
 
 class CameraTextAnalyzer(private val onTextRecognized: (Boolean) -> Unit, private val coroutineScope: CoroutineScope) : ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false
@@ -20,6 +22,7 @@ class CameraTextAnalyzer(private val onTextRecognized: (Boolean) -> Unit, privat
             isLocked=true
             coroutineScope.launch {
                 recognizeText(imageProxy)
+                delay(delayTime)
             }
         }
         else{
@@ -31,8 +34,6 @@ class CameraTextAnalyzer(private val onTextRecognized: (Boolean) -> Unit, privat
         val mediaImage = image.image
         if (mediaImage != null) {
             val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
-//            val englishRecognizer: TextRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-//            val chineseRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
 
             try {
                 withContext(Dispatchers.IO) {
@@ -40,43 +41,6 @@ class CameraTextAnalyzer(private val onTextRecognized: (Boolean) -> Unit, privat
                     onTextRecognized(textRect.isNotEmpty())
                     image.close()
                     isLocked = false
-//                    suspendCoroutine { continuation ->
-//                        englishRecognizer.process(inputImage)
-//                            .addOnSuccessListener { visionText ->
-//                                if (visionText.text.isNotBlank()) {
-//                                    hasText = true
-//                                    onTextRecognized(true)
-//                                }
-//                            }
-//                            .addOnFailureListener { e ->
-//                                Log.e(TAG, "Error processing image for text recognition: ${e.message}")
-//                            }
-//                            .addOnCompleteListener {
-//                                if (hasText) {
-//                                    image.close() // Ensure to close the ImageProxy here
-//                                    isLocked = false
-//                                    continuation.resume(Unit)
-//                                }
-//                            }
-//                    }
-//
-//                    if (!hasText) {
-//                        suspendCoroutine { continuation ->
-//                            chineseRecognizer.process(inputImage)
-//                                .addOnSuccessListener { visionText ->
-//                                    onTextRecognized(visionText.text.isNotBlank())
-//                                }
-//                                .addOnFailureListener { e ->
-//                                    Log.e(TAG, "Error processing image for text recognition: ${e.message}")
-//                                }
-//                                .addOnCompleteListener {
-//                                    image.close() // Ensure to close the ImageProxy here
-//                                    isLocked = false
-//                                    continuation.resume(Unit)
-//                                }
-//                        }
-//                    }
-
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Exception in processing text recognition: ${e.message}")
