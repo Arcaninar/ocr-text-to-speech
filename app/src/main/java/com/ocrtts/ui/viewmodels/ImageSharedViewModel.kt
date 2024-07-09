@@ -12,9 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 class ImageSharedViewModel : ViewModel() {
     private val _fileName = MutableStateFlow("")
     val fileName: StateFlow<String> = _fileName.asStateFlow()
-//
-//    private val _size = MutableStateFlow(IntSize.Zero)
-//    val size: StateFlow<IntSize> = _size.asStateFlow()
 
     var size by mutableStateOf(IntSize.Zero)
         private set

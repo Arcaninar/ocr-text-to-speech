@@ -43,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
 import com.ocrtts.camera.analyzeOCR
+import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import kotlinx.coroutines.delay
@@ -95,7 +96,7 @@ fun ImageScreen(
 
                     val position = interaction.pressPosition
                     var hasText = false
-                    for (text in viewModel.OCRTextList) {
+                    for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
                             hasText = true
@@ -104,12 +105,12 @@ fun ImageScreen(
                     }
 
                     if (!hasText) {
-                        viewModel.updateTextRectSelected(null)
+                        viewModel.updateTextRectSelected(OCRText())
                     }
 
                     delay(3000L)
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
-                        Log.w(TAG, "Long press: ${viewModel.OCRTextSelected?.text}")
+                        Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
                         // text: viewModel.OCRTextSelected!!.text
                         // language: en
@@ -153,25 +154,8 @@ fun ImageScreen(
                                 indication = null,
                                 onClick = {})
                     )
-//                        if (viewModel.OCRTextSelected != null) {
-//                            val box = viewModel.OCRTextSelected!!.rect
-//                            Canvas(modifier = Modifier.fillMaxSize()) {
-//                                val path = Path().apply {
-//                                    addRect(
-//                                        rect = Rect(
-//                                            left = box.left,
-//                                            right = box.right,
-//                                            top = box.top,
-//                                            bottom = box.bottom
-//                                        )
-//                                    )
-//                                }
-//                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-//                            }
-//                        }
-                    val test = viewModel.OCRTextList
-                    for (text in test) {
-                        val box = text.rect
+                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
+                        val box = viewModel.ocrTextSelected.rect
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             val path = Path().apply {
                                 addRect(
@@ -186,6 +170,23 @@ fun ImageScreen(
                             drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
                         }
                     }
+//                    val test = viewModel.ocrTextList
+//                    for (text in test) {
+//                        val box = text.rect
+//                        Canvas(modifier = Modifier.fillMaxSize()) {
+//                            val path = Path().apply {
+//                                addRect(
+//                                    rect = Rect(
+//                                        left = box.left,
+//                                        right = box.right,
+//                                        top = box.top,
+//                                        bottom = box.bottom
+//                                    )
+//                                )
+//                            }
+//                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+//                        }
+//                    }
                 }
             }
             else {
