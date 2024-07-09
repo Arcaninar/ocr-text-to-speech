@@ -32,7 +32,7 @@ private const val TAG="MainScreen"
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen() {
-    val context = LocalContext.current     //添加network选择器的地方
+//    val context = LocalContext.current     //添加network选择器的地方
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     Log.i(TAG,cameraPermissionState.status.isGranted.toString())
     val context = LocalContext.current

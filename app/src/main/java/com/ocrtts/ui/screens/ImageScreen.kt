@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
+import com.ocrtts.base.AzureTextSynthesis
 import com.ocrtts.camera.analyzeOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
@@ -111,6 +112,7 @@ fun ImageScreen(
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         Log.w(TAG, "Long press: ${viewModel.OCRTextSelected?.text}")
                         // TODO: Text to Speech
+                        synthesizeAndPlayText(viewModel.OCRTextSelected!!.text, "en-US", 1.0f, AzureTextSynthesis("en-GB-SoniaNeural"))
                     }
                 }
 
