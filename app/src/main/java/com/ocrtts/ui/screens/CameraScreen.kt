@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.media.MediaPlayer
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
@@ -45,7 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.common.util.concurrent.ListenableFuture
-import com.ocrtts.R
+import com.ocrtts.notificationSound
 import com.ocrtts.camera.CameraTextAnalyzer
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.type.OCRText
@@ -158,9 +157,7 @@ fun NotifyUser(
 ) {
     if (viewModel.isRecognizedText.collectAsStateWithLifecycle().value) {
         if (!viewModel.hasTextBefore.collectAsStateWithLifecycle().value) {
-            val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
-            audio.start()
-            audio.release()
+            notificationSound.start()
             viewModel.updateHasText(true)
         }
 
@@ -236,14 +233,16 @@ fun onClickButton(
                     else -> 0f
                 }
 
-                val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+                if (rotationDegrees != 0f) {
+                    val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
 
-                val size = sharedViewModel.size
-                val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
+                    val size = sharedViewModel.size
+                    val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
 
-                val outputStream = FileOutputStream(photoFile)
-                realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                outputStream.close()
+                    val outputStream = FileOutputStream(photoFile)
+                    realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                    outputStream.close()
+                }
 
                 sharedViewModel.setFileName(path)
                 cameraProviderFuture.get().unbindAll()

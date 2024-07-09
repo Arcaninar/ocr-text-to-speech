@@ -10,10 +10,10 @@ import com.ocrtts.type.OCRText
 import java.util.Collections.rotate
 
 class ImageViewModel : ViewModel() {
-    var OCRTextList: List<OCRText> by mutableStateOf(listOf())
+    var ocrTextList: List<OCRText> by mutableStateOf(listOf())
         private set
 
-    var OCRTextSelected: OCRText? by mutableStateOf(null)
+    var ocrTextSelected: OCRText by mutableStateOf(OCRText())
         private set
 
     var longTouchCounter by mutableIntStateOf(0)
@@ -25,9 +25,9 @@ class ImageViewModel : ViewModel() {
     var containText by mutableStateOf(false)
         private set
 
-    fun updateTextRectList(list: List<OCRText>) { OCRTextList = list }
+    fun updateTextRectList(list: List<OCRText>) { ocrTextList = list }
 
-    fun updateTextRectSelected(value: OCRText?) { OCRTextSelected = value }
+    fun updateTextRectSelected(value: OCRText) { ocrTextSelected = value }
 
     fun incrementLongTouch() { longTouchCounter += 1 }
 
@@ -42,5 +42,4 @@ class ImageViewModel : ViewModel() {
     fun imageContainsText() {
         containText = true
     }
-
 }
