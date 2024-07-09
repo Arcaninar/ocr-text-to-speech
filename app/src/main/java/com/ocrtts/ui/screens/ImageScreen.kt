@@ -83,7 +83,7 @@ fun ImageScreen(
     val file = File(fileName)
     val bitmap = BitmapFactory.decodeFile(file.absolutePath)
 
-    val viewSize by sharedViewModel.size.collectAsStateWithLifecycle()
+    val viewSize = sharedViewModel.size
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collectLatest { interaction ->
@@ -111,6 +111,8 @@ fun ImageScreen(
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         Log.w(TAG, "Long press: ${viewModel.OCRTextSelected?.text}")
                         // TODO: Text to Speech
+                        // text: viewModel.OCRTextSelected!!.text
+                        // language: en
                     }
                 }
 
@@ -200,20 +202,21 @@ fun ImageScreen(
                 modifier = Modifier
                     .size(75.dp)
                     .align(Alignment.TopStart)
-                    .padding(16.dp)
+                    .padding(8.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "Back to video",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(30.dp)
                 )
             }
             IconButton(
                 onClick = { navController.navigate(Screens.HistoryScreen.route) },
                 modifier = Modifier
+                    .size(75.dp)
                     .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .padding(8.dp)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.history),
@@ -225,5 +228,3 @@ fun ImageScreen(
         }
     }
 }
-
-
