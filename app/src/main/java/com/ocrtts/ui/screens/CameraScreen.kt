@@ -16,9 +16,12 @@ import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -26,15 +29,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -50,6 +59,7 @@ import com.ocrtts.history.DataStoreManager
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import com.ocrtts.utils.TimingUtility
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -130,7 +140,6 @@ fun CameraScreen(
                 .fillMaxSize()
                 .onGloballyPositioned { size ->
                     sharedViewModel.updateSize(size.size)
-                    Log.w("Recompose", "recompose android view")
                 }
         )
 
@@ -165,32 +174,65 @@ fun NotifyUser(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = modifier
-                .offset(y = (-20).dp)
+                .offset(y = (-10).dp)
                 .fillMaxWidth()
         ) {
             Text(
                 text = "There is a text in front of you. Click the button below to view it",
+                textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .background(Color.Yellow, RoundedCornerShape(50))
+                    .background(Color.White, RoundedCornerShape(50))
                     .padding(5.dp)
                     .fillMaxWidth(0.8f)
             )
+            Spacer(modifier = Modifier.padding(5.dp))
             val context = LocalContext.current
-            Button(
-                onClick = {
-                    onClickButton(
-                        imageCapture = imageCapture,
-                        context = context,
-                        navController = navController,
-                        sharedViewModel = sharedViewModel,
-                        dataStoreManager = dataStoreManager,
-                        cameraProviderFuture = cameraProviderFuture
+            Box(
+                contentAlignment= Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .border(
+                        width = 2.dp,
+                        color = Color.White,
+                        shape = CircleShape
                     )
-
-
-                }) {
-                CircleShape
+                    .clickable {
+                        onClickButton(
+                            imageCapture = imageCapture,
+                            context = context,
+                            navController = navController,
+                            sharedViewModel = sharedViewModel,
+                            dataStoreManager = dataStoreManager,
+                            cameraProviderFuture = cameraProviderFuture
+                        )
+                    }
+            ){
+                //internal circle with icon
+                Icon(
+                    imageVector = Icons.Filled.Circle,
+                    contentDescription = "contentDescription",
+                    modifier = Modifier
+                        .size(30.dp)
+                        .background(Color.White, CircleShape)
+                        .padding(2.dp),
+                    tint = Color.White
+                )
             }
+//            Button(
+//                onClick = {
+//                    onClickButton(
+//                        imageCapture = imageCapture,
+//                        context = context,
+//                        navController = navController,
+//                        sharedViewModel = sharedViewModel,
+//                        dataStoreManager = dataStoreManager,
+//                        cameraProviderFuture = cameraProviderFuture
+//                    )
+//
+//
+//                }) {
+//                CircleShape
+//            }
         }
     }
     else {
@@ -233,15 +275,27 @@ fun onClickButton(
                     else -> 0f
                 }
 
+//                TimingUtility.measureExecutionTime("rotate and scale bitmap") {
+//                    val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+//
+//                    val size = sharedViewModel.size
+//                    val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
+//                }
+
                 if (rotationDegrees != 0f) {
                     val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-
                     val size = sharedViewModel.size
                     val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
 
                     val outputStream = FileOutputStream(photoFile)
                     realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
                     outputStream.close()
+
+//                    TimingUtility.measureExecutionTime("save file") {
+//                        val outputStream = FileOutputStream(photoFile)
+//                        realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+//                        outputStream.close()
+//                    }
                 }
 
                 sharedViewModel.setFileName(path)

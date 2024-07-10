@@ -46,9 +46,12 @@ import com.ocrtts.camera.analyzeOCR
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
+import com.ocrtts.utils.TimingUtility
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.io.File
+import kotlin.coroutines.suspendCoroutine
 
 
 fun imageToBitmap(image: Image): Bitmap {
@@ -80,6 +83,11 @@ fun ImageScreen(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
+    TimingUtility.measureComposableExecutionTime("open file") {
+        val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
+        val file = File(fileName)
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+    }
     val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
     val file = File(fileName)
     val bitmap = BitmapFactory.decodeFile(file.absolutePath)
@@ -96,7 +104,7 @@ fun ImageScreen(
 
                     val position = interaction.pressPosition
                     var hasText = false
-                    for (text in viewModel.ocrTextList) {
+                    for (text in viewModel.ocrTextList ?: listOf()) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
                             hasText = true
@@ -125,22 +133,35 @@ fun ImageScreen(
         }
     }
 
-    LaunchedEffect(viewModel.isFinishedAnalysing) {
-        if (!viewModel.isFinishedAnalysing) {
-            val textRectList = analyzeOCR(image = bitmap, viewSize = viewSize)
-
-            viewModel.finishedAnalyzing()
-            if (textRectList.isNotEmpty()) {
-                viewModel.imageContainsText()
-                viewModel.updateTextRectList(textRectList)
-            }
+    LaunchedEffect(viewModel.ocrTextList) {
+        if (viewModel.ocrTextList == null) {
+            analyzeOCR(image = bitmap, viewSize = viewSize, viewModel::onTextRecognized)
         }
     }
 
+
+//    LaunchedEffect(viewModel.isFinishedAnalysing) {
+//        if (!viewModel.isFinishedAnalysing) {
+//            analyzeOCR(image = bitmap, viewSize = viewSize, viewModel)
+//
+//            viewModel.finishedAnalyzing()
+//            if (textRectList.isNotEmpty()) {
+//                viewModel.imageContainsText()
+//                viewModel.updateTextRectList(textRectList)
+//            }
+//        }
+//    }
+
+//    LaunchedEffect(viewModel.ocrTextList) {
+//        if (viewModel.ocrTextList.isNotEmpty()) {
+//            viewModel.imageContainsText()
+//        }
+//    }
+
     Surface(modifier = modifier.background(Color.Transparent)) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (viewModel.isFinishedAnalysing) {
-                if (!viewModel.containText) {
+            if (viewModel.ocrTextList != null) {
+                if (viewModel.ocrTextList!!.isEmpty()) {
                     Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
                 }
                 else {

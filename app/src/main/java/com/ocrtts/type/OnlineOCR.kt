@@ -1,20 +1,25 @@
 package com.ocrtts.type
 
-//data class OnlineOCRRequest(
-//    val requests: List<ImageRequest>
-//)
-//
-//data class ImageRequest(
-//    val image: Image,
-//    val features: List<Feature>
-//)
-//
-//data class Image(
-//    val content: String
-//)
-//
-//data class Feature(
-//    val type: String,
-//    val maxResults: Int
-//)
-//
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class OnlineOCRRequest(
+    val requests: List<ImageRequest>
+)
+
+@Serializable
+data class ImageRequest(
+    val image: ImageBase64,
+    val features: List<AnalysisFeature>
+)
+
+@Serializable
+data class ImageBase64(
+    val content: String
+)
+
+@Serializable
+data class AnalysisFeature(
+    val type: String,
+    val maxResults: Int
+)
