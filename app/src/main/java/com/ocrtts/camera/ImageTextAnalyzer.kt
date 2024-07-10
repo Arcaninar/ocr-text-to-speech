@@ -40,7 +40,7 @@ private const val TAG = "ImageTextRecognitionAnalyzer"
 suspend fun analyzeOCR(image: Bitmap, viewSize: IntSize, onTextRecognized: (List<OCRText>) -> Unit) {
     // do online analysis if internet is online, otherwise offline
     val scaleFactor = getScaleFactor(viewSize, IntSize(image.width, image.height))
-//    TimingUtility.measureSuspendingExecutionTime("online ocr") { analyzeOCROnline(image) }
+    TimingUtility.measureSuspendingExecutionTime("online ocr") { analyzeOCROnline(image) }
 //    TimingUtility.measureSuspendingExecutionTime("offline ocr") { analyzeOCROffline(InputImage.fromBitmap(image, 0), false, scaleFactor, onTextRecognized) }
     analyzeOCROffline(InputImage.fromBitmap(image, 0), false, scaleFactor, onTextRecognized)
 //    val ocrTextList = analyzeOCROnline(image)
@@ -53,16 +53,18 @@ fun getScaleFactor(viewSize: IntSize, imageSize: IntSize): Pair<Float, Float> {
 }
 
 suspend fun analyzeOCROnline(image: Bitmap): Int {
-    TimingUtility.measureExecutionTime("initiate client") {
-        HttpClient(CIO) {
-            install(ContentNegotiation) {
-                json(Json {
-                    prettyPrint = true
-                    isLenient = true
-                })
-            }
-        }
-    }
+//    TimingUtility.measureExecutionTime("initiate client") {
+//        HttpClient(CIO) {
+//            install(ContentNegotiation) {
+//                json(Json {
+//                    prettyPrint = true
+//                    isLenient = true
+//                })
+//            }
+//        }
+//    }
+
+    // timed the creation of client and it's very fast
     val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json {
@@ -74,23 +76,25 @@ suspend fun analyzeOCROnline(image: Bitmap): Int {
 
     val apiKey = BuildConfig.API_KEY
 
-    TimingUtility.measureExecutionTime("create request") {
-        val apiKey = BuildConfig.API_KEY
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        image.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-        val byteArray = byteArrayOutputStream.toByteArray()
-        val encoded = Base64.encodeToString(byteArray, Base64.DEFAULT)
-        val request = OnlineOCRRequest(
-            listOf(
-                ImageRequest(
-                    ImageBase64(encoded),
-                    listOf(
-                        AnalysisFeature("TEXT_DETECTION", 1)
-                    )
-                )
-            )
-        )
-    }
+//    TimingUtility.measureExecutionTime("create request") {
+//        val apiKey = BuildConfig.API_KEY
+//        val byteArrayOutputStream = ByteArrayOutputStream()
+//        image.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+//        val byteArray = byteArrayOutputStream.toByteArray()
+//        val encoded = Base64.encodeToString(byteArray, Base64.DEFAULT)
+//        val request = OnlineOCRRequest(
+//            listOf(
+//                ImageRequest(
+//                    ImageBase64(encoded),
+//                    listOf(
+//                        AnalysisFeature("TEXT_DETECTION", 1)
+//                    )
+//                )
+//            )
+//        )
+//    }
+
+    // timed converting bitmap to base64 and it took quite long, around 2-3 seconds but I think there is a way to fix this or change the conversion
     val byteArrayOutputStream = ByteArrayOutputStream()
     image.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
     val byteArray = byteArrayOutputStream.toByteArray()
@@ -107,31 +111,33 @@ suspend fun analyzeOCROnline(image: Bitmap): Int {
         )
     )
     Log.i("response", "start request")
-    TimingUtility.measureSuspendingExecutionTime("send request") {
-        client.post("https://vision.googleapis.com/v1/images:annotate?key=$apiKey") {
-//        url {
-//            parameters.append("key", apiKey)
-//        }
-            headers {
-                append("X-Android-Package", "com.ocrtts")
-                append("X-Android-Cert", "00403C671C1C5F0ACBCC5E4EBCAB03C790AF5BB4")
-            }
-            contentType(ContentType.Application.Json)
-            setBody(request)
-        }
-    }
-//    val response: HttpResponse = client.post("https://vision.googleapis.com/v1/images:annotate?key=$apiKey") {
+//    TimingUtility.measureSuspendingExecutionTime("send request") {
+//        client.post("https://vision.googleapis.com/v1/images:annotate?key=$apiKey") {
 ////        url {
 ////            parameters.append("key", apiKey)
 ////        }
-//        headers {
-//            append("X-Android-Package", "com.ocrtts")
-//            append("X-Android-Cert", "00403C671C1C5F0ACBCC5E4EBCAB03C790AF5BB4")
+//            headers {
+//                append("X-Android-Package", "com.ocrtts")
+//                append("X-Android-Cert", "00403C671C1C5F0ACBCC5E4EBCAB03C790AF5BB4")
+//            }
+//            contentType(ContentType.Application.Json)
+//            setBody(request)
 //        }
-//        contentType(ContentType.Application.Json)
-//        setBody(request)
 //    }
-//    Log.i("response", response.body())
+
+    // this one takes really long, around 5-10 seconds even though the response is only an error response
+    val response: HttpResponse = client.post("https://vision.googleapis.com/v1/images:annotate?key=$apiKey") {
+//        url {
+//            parameters.append("key", apiKey)
+//        }
+        headers {
+            append("X-Android-Package", "com.ocrtts")
+            append("X-Android-Cert", "00403C671C1C5F0ACBCC5E4EBCAB03C790AF5BB4")
+        }
+        contentType(ContentType.Application.Json)
+        setBody(request)
+    }
+    Log.i("response", response.body())
 //    return mutableListOf(OCRText())
     return 0
 }
