@@ -1,6 +1,7 @@
 package com.ocrtts.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import com.ocrtts.type.OCRText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -12,8 +13,8 @@ class CameraViewModel : ViewModel() {
     private val _hasTextBefore = MutableStateFlow(false)
     val hasTextBefore = _hasTextBefore.asStateFlow()
 
-    fun updateRecognizedText(value: Boolean) {
-        _isRecognizedText.value = value
+    fun updateRecognizedText(textList: List<OCRText>) {
+        _isRecognizedText.value = textList[0].text.isNotBlank()
     }
 
     fun updateHasText(value: Boolean) {
