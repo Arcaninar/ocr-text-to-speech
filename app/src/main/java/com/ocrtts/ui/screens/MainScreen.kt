@@ -18,6 +18,9 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.ui.viewmodels.MainViewModel
+import com.ocrtts.utils.ShaUtility
+import android.content.pm.PackageManager
+
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function

@@ -10,6 +10,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -44,6 +45,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.ocrtts.camera.TextAnalyzer
 import com.ocrtts.ui.viewmodels.MainViewModel
+import com.ocrtts.utils.ShaUtility
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,7 +54,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 
-
+private const val TAG="CameraScreen"
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
     suspendCoroutine { continuation ->
         ProcessCameraProvider.getInstance(this).also { cameraProvider ->
@@ -69,7 +71,10 @@ fun CameraScreen(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
+
+
     val context = LocalContext.current
+    val signature = ShaUtility.getSignature(context.packageManager, "com.ocrtts")
     val activity = LocalContext.current as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
@@ -82,7 +87,7 @@ fun CameraScreen(
             .build()
             .also {analysis ->
                 val coroutineScope = CoroutineScope(Job() + Dispatchers.Main)
-                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), TextAnalyzer(viewModel::onTextRecognized, coroutineScope))
+                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), TextAnalyzer(context,viewModel::onTextRecognized, coroutineScope))
             }
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -96,6 +101,9 @@ fun CameraScreen(
 
 
     LaunchedEffect(lensFacing) {
+        if (signature != null) {
+            Log.i(TAG,signature)
+        }
         val cameraProvider = context.getCameraProvider()
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture,imageAnalysis)
