@@ -11,17 +11,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.ocrtts.ui.components.DataStoreManager
+import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 
 //TODO
@@ -31,11 +29,11 @@ private const val TAG="MainScreen"
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen() {
-    val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
-    Log.i(TAG, cameraPermissionState.status.isGranted.toString())
-    val navController = rememberNavController()
     val context = LocalContext.current
+    val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+    Log.i(TAG, "Camera permission granted: ${cameraPermissionState.status.isGranted}")
     val dataStoreManager = remember { DataStoreManager(context) }
+    val navController = rememberNavController()
     val startingScreen = if (cameraPermissionState.status.isGranted) Screens.HomeScreen else Screens.PermissionRequestScreen
 
     NavHost(navController = navController, startDestination = startingScreen.route) {
@@ -45,28 +43,29 @@ fun MainScreen() {
         composable(Screens.PermissionRequestScreen.route) {
             PermissionRequestScreen(navController = navController, cameraPermissionState = cameraPermissionState)
         }
+        composable(Screens.TTSTestingScreen.route){
+            TTSTestingScreen(navController = navController)
+        }
         navigation(startDestination = Screens.CameraScreen.route, route = Screens.MainCameraScreen.route) {
             composable(Screens.CameraScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
                 CameraScreen(navController = navController, sharedViewModel = sharedViewModel, dataStoreManager = dataStoreManager)
             }
-            composable(
-                route = "${Screens.ImageScreen.route}?fileName={fileName}",
-                arguments = listOf(navArgument("fileName") {
-                    type = NavType.StringType
-                    defaultValue = ""
-                })
-            ) {
+            composable(Screens.ImageScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                val fileName = it.arguments?.getString("fileName")
-                ImageScreen(fileName = fileName!!, sharedViewModel = sharedViewModel, navController = navController)
+                ImageScreen(sharedViewModel = sharedViewModel, navController = navController)
+            }
+            composable(Screens.HistoryScreen.route) {
+                val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
+                HistoryScreen(navController = navController, sharedViewModel = sharedViewModel, dataStoreManager = dataStoreManager)
+            }
+            composable(Screens.AlbumScreen.route) {
+                val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
+                AlbumScreen(sharedViewModel = sharedViewModel, navController = navController)
             }
         }
-        composable(Screens.HistoryScreen.route) {
-            HistoryScreen(navController = navController, dataStoreManager = dataStoreManager)
-        }
     }
-    Log.i(TAG, "triggered")
+    Log.i(TAG, "MainScreen initialized")
 }
 
 

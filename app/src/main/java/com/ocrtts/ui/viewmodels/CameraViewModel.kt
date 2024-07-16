@@ -1,55 +1,23 @@
 package com.ocrtts.ui.viewmodels
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.google.mlkit.vision.text.Text
-
-//data class imageObject(
-//    image
-//)
+import com.ocrtts.type.OCRText
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 const val TAG="MainViewModel"
 class CameraViewModel : ViewModel() {
-//    private val _recognizedText = MutableStateFlow<String>("")
-//    val recognizedText = _recognizedText.asStateFlow()
+    private val _isRecognizedText = MutableStateFlow(false)
+    val isRecognizedText = _isRecognizedText.asStateFlow()
 
+    private val _hasTextBefore = MutableStateFlow(false)
+    val hasTextBefore = _hasTextBefore.asStateFlow()
 
-    var recognizedText: MutableState<Boolean> = mutableStateOf(false)
-        private set
+    fun updateRecognizedText(textList: List<OCRText>) {
+        _isRecognizedText.value = textList[0].text.isNotBlank()
+    }
 
-//    var textRectList: MutableState<List<TextRect>> = mutableStateOf(listOf())
-//        private set
-//
-//    var textRectSelected: MutableState<TextRect?> = mutableStateOf(null)
-//        private set
-
-//    var previousHasText: MutableState<Boolean> = mutableStateOf(false)
-//        private set
-
-//    var longTouchCounter: MutableState<Int> = mutableStateOf(0)
-//        private set
-
-//    var imageSelected: MutableState<Image?> = mutableStateOf(null)
-
-//    fun setTextRectList(list: List<TextRect>) { textRectList.value = list }
-//
-//    fun setTextRectSelected(value: TextRect?) { textRectSelected.value = value }
-
-//    fun setPreviousHasText(value: Boolean) { previousHasText.value = value }
-
-//    fun incrementLongTouch() { longTouchCounter.value += 1 }
-
-//    fun setImageSelected(image: Image?) { imageSelected.value = image }
-
-    fun updateRecognizedText(text: Text) {
-//        _recognizedText.value = text
-//        Log.i(TAG,text)
-        if (text.text.isNotBlank()) {
-            recognizedText.value = true
-        }
-        else {
-            recognizedText.value = false
-        }
+    fun updateHasText(value: Boolean) {
+        _hasTextBefore.value = value
     }
 }
