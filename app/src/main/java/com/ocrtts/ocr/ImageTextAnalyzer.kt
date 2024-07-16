@@ -139,7 +139,7 @@ suspend fun analyzeOCR(viewSize: IntSize, imageSize: IntSize, imagePath: String,
     // do online analysis if internet is online, otherwise offline
     val scaleFactor = getScaleFactor(viewSize, imageSize)
 
-    val hasInternet = true
+    val hasInternet = false
     if (hasInternet) {
         OnlineOCR.analyzeOCR(imagePath, false, scaleFactor, onTextRecognized)
     }

@@ -135,25 +135,6 @@ fun ImageScreen(
         }
     }
 
-
-//    LaunchedEffect(viewModel.isFinishedAnalysing) {
-//        if (!viewModel.isFinishedAnalysing) {
-//            analyzeOCR(image = bitmap, viewSize = viewSize, viewModel)
-//
-//            viewModel.finishedAnalyzing()
-//            if (textRectList.isNotEmpty()) {
-//                viewModel.imageContainsText()
-//                viewModel.updateTextRectList(textRectList)
-//            }
-//        }
-//    }
-
-//    LaunchedEffect(viewModel.ocrTextList) {
-//        if (viewModel.ocrTextList.isNotEmpty()) {
-//            viewModel.imageContainsText()
-//        }
-//    }
-
     Surface(modifier = modifier.background(Color.Transparent)) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (viewModel.ocrTextList != null) {
@@ -187,23 +168,21 @@ fun ImageScreen(
 //                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
 //                        }
 //                    }
-                    if (viewModel.ocrTextList != null) {
-                        val test = viewModel.ocrTextList
-                        for (text in test!!) {
-                            val box = text.rect
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val path = Path().apply {
-                                    addRect(
-                                        rect = Rect(
-                                            left = box.left,
-                                            right = box.right,
-                                            top = box.top,
-                                            bottom = box.bottom
-                                        )
+                    val test = viewModel.ocrTextList
+                    for (text in test!!) {
+                        val box = text.rect
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val path = Path().apply {
+                                addRect(
+                                    rect = Rect(
+                                        left = box.left,
+                                        right = box.right,
+                                        top = box.top,
+                                        bottom = box.bottom
                                     )
-                                }
-                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+                                )
                             }
+                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
                         }
                     }
                 }
