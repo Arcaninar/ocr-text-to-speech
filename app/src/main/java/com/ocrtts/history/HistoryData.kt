@@ -27,13 +27,16 @@ class DataStoreManager(private val context: Context) {
             currentHistory.add(filePath)
             if (currentHistory.size > MAX_HISTORY_SIZE) {
                 // Remove the oldest entries to maintain the limit
+//                for (i in 0..<currentHistory.size - MAX_HISTORY_SIZE) {
+//                    removeImageFromHistory(currentHistory[i])
+//                }
                 currentHistory.subList(0, currentHistory.size - MAX_HISTORY_SIZE).clear()
             }
             preferences[IMAGE_HISTORY_KEY] = currentHistory.toSet()
         }
     }
 
-    suspend fun removeImageFromHistory(filePath: String) {
+    private suspend fun removeImageFromHistory(filePath: String) {
         context.dataStore.edit { preferences ->
             val currentHistory = preferences[IMAGE_HISTORY_KEY] ?: emptySet()
             preferences[IMAGE_HISTORY_KEY] = currentHistory - filePath

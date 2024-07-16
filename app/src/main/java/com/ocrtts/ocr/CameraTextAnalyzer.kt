@@ -1,4 +1,4 @@
-package com.ocrtts.camera
+package com.ocrtts.ocr
 
 import android.util.Log
 import androidx.annotation.OptIn
@@ -6,17 +6,14 @@ import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
 import com.ocrtts.type.OCRText
 import com.ocrtts.utils.TimingUtility
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val TAG = "CameraTextRecognitionAnalyzer"
-//private const val delayTime = 1_000L
 
 class CameraTextAnalyzer(private val onTextRecognized: (List<OCRText>) -> Unit, private val coroutineScope: CoroutineScope) : ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false
@@ -25,7 +22,6 @@ class CameraTextAnalyzer(private val onTextRecognized: (List<OCRText>) -> Unit, 
             isLocked=true
             coroutineScope.launch {
                 recognizeText(imageProxy)
-//                delay(delayTime)
             }
         }
         else{
@@ -41,7 +37,7 @@ class CameraTextAnalyzer(private val onTextRecognized: (List<OCRText>) -> Unit, 
             try {
                 withContext(Dispatchers.IO) {
                     TimingUtility.measureSuspendingExecutionTime("offline ocr detect") {
-                        analyzeOCROffline(inputImage, true, onTextRecognized = onTextRecognized)
+                        OfflineOCR.analyzeOCR(inputImage, true, onTextRecognized = onTextRecognized)
                     }
                     image.close()
                     isLocked = false

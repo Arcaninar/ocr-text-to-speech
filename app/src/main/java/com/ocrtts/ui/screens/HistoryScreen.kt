@@ -42,18 +42,16 @@ fun HistoryScreen(
             .padding(16.dp)
     ) {
         items(sortedImageHistory) { file ->
-//            val file = File(image.value as String)
             Log.d("HistoryScreen", "Processing file: ${file.absolutePath}, exists: ${file.exists()}")
 
             if (file.exists()) {
                 val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-//                val rotatedBitmap = bitmap.rotate(90f) // Rotate the bitmap
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp)
                         .clickable {
-                            sharedViewModel.setFileName(file.absolutePath)
+                            sharedViewModel.setImageInfo(file.absolutePath, bitmap)
                             navController.navigate(Screens.ImageScreen.route)
                         }
                 ) {

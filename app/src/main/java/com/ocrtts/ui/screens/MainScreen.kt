@@ -3,6 +3,7 @@
 package com.ocrtts.ui.screens
 
 import HistoryScreen
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,14 +22,16 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import com.ocrtts.ui.viewmodels.MainViewModel
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
 private const val TAG="MainScreen"
 
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(viewModel: MainViewModel = viewModel()) {
     val context = LocalContext.current
 
     //添加network选择器的地方
@@ -39,6 +42,7 @@ fun MainScreen() {
     val dataStoreManager = remember { DataStoreManager(context) }
     val navController = rememberNavController()
     val startingScreen = if (cameraPermissionState.status.isGranted) Screens.HomeScreen else Screens.PermissionRequestScreen
+
     NavHost(navController = navController, startDestination = startingScreen.route) {
         composable(Screens.HomeScreen.route) { 
             HomeScreen(navController = navController)

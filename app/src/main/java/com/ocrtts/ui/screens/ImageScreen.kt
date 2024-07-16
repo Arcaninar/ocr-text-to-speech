@@ -28,7 +28,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,22 +35,20 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.camera.analyzeOCR
+import com.ocrtts.ocr.analyzeOCR
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
-import com.ocrtts.utils.TimingUtility
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import java.io.File
-import kotlin.coroutines.suspendCoroutine
 
 
 fun imageToBitmap(image: Image): Bitmap {
@@ -82,17 +79,6 @@ fun ImageScreen(
     viewModel: ImageViewModel = viewModel()
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-
-    TimingUtility.measureComposableExecutionTime("open file") {
-        val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
-        val file = File(fileName)
-        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-    }
-    val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
-    val file = File(fileName)
-    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-
-    val viewSize = sharedViewModel.size
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collectLatest { interaction ->
@@ -133,9 +119,15 @@ fun ImageScreen(
         }
     }
 
+    val context = LocalContext.current
+    val fileName = sharedViewModel.fileName.collectAsStateWithLifecycle().value
+    val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
+    val viewSize = sharedViewModel.size
+
     LaunchedEffect(viewModel.ocrTextList) {
         if (viewModel.ocrTextList == null) {
-            analyzeOCR(image = bitmap, viewSize = viewSize, viewModel::onTextRecognized)
+            val imageSize = IntSize(image.width, image.height)
+            analyzeOCR(viewSize = viewSize, imageSize, fileName, context, viewModel::onTextRecognized)
         }
     }
 
@@ -166,7 +158,7 @@ fun ImageScreen(
                 }
                 else {
                     Image(
-                        bitmap = bitmap.asImageBitmap(),
+                        bitmap = image.asImageBitmap(),
                         contentDescription = "Image",
                         modifier = Modifier
                             .fillMaxSize()
@@ -175,25 +167,8 @@ fun ImageScreen(
                                 indication = null,
                                 onClick = {})
                     )
-                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
-                        val box = viewModel.ocrTextSelected.rect
-                        Canvas(modifier = Modifier.fillMaxSize()) {
-                            val path = Path().apply {
-                                addRect(
-                                    rect = Rect(
-                                        left = box.left,
-                                        right = box.right,
-                                        top = box.top,
-                                        bottom = box.bottom
-                                    )
-                                )
-                            }
-                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-                        }
-                    }
-//                    val test = viewModel.ocrTextList
-//                    for (text in test) {
-//                        val box = text.rect
+//                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
+//                        val box = viewModel.ocrTextSelected.rect
 //                        Canvas(modifier = Modifier.fillMaxSize()) {
 //                            val path = Path().apply {
 //                                addRect(
@@ -208,6 +183,25 @@ fun ImageScreen(
 //                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
 //                        }
 //                    }
+                    if (viewModel.ocrTextList != null) {
+                        val test = viewModel.ocrTextList
+                        for (text in test!!) {
+                            val box = text.rect
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                val path = Path().apply {
+                                    addRect(
+                                        rect = Rect(
+                                            left = box.left,
+                                            right = box.right,
+                                            top = box.top,
+                                            bottom = box.bottom
+                                        )
+                                    )
+                                }
+                                drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+                            }
+                        }
+                    }
                 }
             }
             else {

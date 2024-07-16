@@ -24,6 +24,7 @@ android {
         Properties properties = new Properties()
         properties.load(project.rootProject.file('local.properties').newDataInputStream())
         buildConfigField "String", "API_KEY", "\"${properties.getProperty('API_KEY')}\""
+        buildConfigField "String", "SHA_CERT", "\"${properties.getProperty('SHA_CERT')}\""
     }
 
     buildTypes {
@@ -50,9 +51,10 @@ android {
         stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
     }
     packagingOptions {
-        resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
-        }
+//        resources {
+//            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+//        }
+        resources.excludes.add("META-INF/*")
     }
 }
 
@@ -74,8 +76,8 @@ dependencies {
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3'
-    implementation 'androidx.compose.material:material-icons-core:1.7.0-beta04'
-    implementation 'androidx.compose.material:material-icons-extended:1.7.0-beta04'
+    implementation 'androidx.compose.material:material-icons-core:1.7.0-beta05'
+    implementation 'androidx.compose.material:material-icons-extended:1.7.0-beta05'
     implementation 'androidx.compose.material:material:1.6.8'
     implementation "androidx.navigation:navigation-compose:2.7.7"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1"
@@ -95,6 +97,19 @@ dependencies {
     implementation 'com.google.mlkit:text-recognition:16.0.0'
     implementation 'com.google.mlkit:text-recognition-chinese:16.0.0'
 
+    //// GOOGLE CLOUD VISION ////
+//    implementation 'com.google.api-client:google-api-client:1.32.1'
+//    implementation 'com.google.cloud:google-cloud-vision:3.44.0'
+//    implementation 'com.google.api-client:google-api-client-jackson2:1.32.1'
+//    implementation 'com.google.http-client:google-http-client-jackson2:1.39.2'
+//    implementation 'com.google.code.gson:gson:2.11.0'
+
+    //// GOOGLE ONLINE OCR ///
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.36.0")
+    implementation("com.google.api-client:google-api-client-android:2.6.0")
+    implementation("com.google.apis:google-api-services-vision:v1-rev451-1.25.0")
+    implementation("com.google.code.gson:gson:2.11.0")
+
     //// ACCOMPANIST ////
     implementation "com.google.accompanist:accompanist-permissions:0.34.0"
 
@@ -105,11 +120,11 @@ dependencies {
 //    implementation "com.squareup.retrofit2:retrofit:2.11.0"
 //    implementation "com.squareup.retrofit2:converter-scalars:2.11.0"
 //    implementation "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0"
-//    implementation "com.squareup.okhttp3:okhttp:4.12.0"
-    implementation "io.ktor:ktor-client-core:2.3.12"
-    implementation "io.ktor:ktor-client-cio:2.3.12"
-    implementation "io.ktor:ktor-client-content-negotiation:2.3.12"
-    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.12"
+////    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+//    implementation "io.ktor:ktor-client-core:2.3.12"
+//    implementation "io.ktor:ktor-client-cio:2.3.12"
+//    implementation "io.ktor:ktor-client-content-negotiation:2.3.12"
+//    implementation "io.ktor:ktor-serialization-kotlinx-json:2.3.12"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

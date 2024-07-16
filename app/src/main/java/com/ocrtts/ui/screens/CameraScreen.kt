@@ -30,13 +30,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,12 +52,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.common.util.concurrent.ListenableFuture
 import com.ocrtts.notificationSound
-import com.ocrtts.camera.CameraTextAnalyzer
+import com.ocrtts.ocr.CameraTextAnalyzer
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
-import com.ocrtts.utils.TimingUtility
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -275,30 +272,38 @@ fun onClickButton(
                     else -> 0f
                 }
 
-//                TimingUtility.measureExecutionTime("rotate and scale bitmap") {
-//                    val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-//
-//                    val size = sharedViewModel.size
-//                    val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
-//                }
-
-                if (rotationDegrees != 0f) {
-                    val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-                    val size = sharedViewModel.size
-                    val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
-
-                    val outputStream = FileOutputStream(photoFile)
-                    realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    outputStream.close()
-
-//                    TimingUtility.measureExecutionTime("save file") {
-//                        val outputStream = FileOutputStream(photoFile)
-//                        realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-//                        outputStream.close()
-//                    }
+                CoroutineScope(Dispatchers.Main).launch {
+                    lateinit var image: Bitmap
+                    if (rotationDegrees == 0f) {
+                        image = BitmapFactory.decodeFile(path)
+                    }
+                    else {
+                        image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+                        val size = sharedViewModel.size
+                        image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val outputStream = FileOutputStream(photoFile)
+                            image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                            outputStream.close()
+                        }
+                    }
+                    sharedViewModel.setImageInfo(path, image)
                 }
 
-                sharedViewModel.setFileName(path)
+//                var image = BitmapFactory.decodeFile(path)
+//
+//                if (rotationDegrees != 0f) {
+//                    image = image.rotate(rotationDegrees)
+//                    val size = sharedViewModel.size
+//                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+//                    CoroutineScope(Dispatchers.IO).launch {
+//                        val outputStream = FileOutputStream(photoFile)
+//                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+//                        outputStream.close()
+//                    }
+//                }
+//
+//                sharedViewModel.setImageInfo(path, image)
                 cameraProviderFuture.get().unbindAll()
                 navController.navigate(Screens.ImageScreen.route)
             }
