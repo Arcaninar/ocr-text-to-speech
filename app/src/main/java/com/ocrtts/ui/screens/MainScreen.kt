@@ -3,6 +3,7 @@
 package com.ocrtts.ui.screens
 
 import HistoryScreen
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,26 +22,25 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import com.ocrtts.ui.viewmodels.SettingViewModel
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
 private const val TAG="MainScreen"
 
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MainScreen() {
-    val context = LocalContext.current
-
-    //添加network选择器的地方
-
-
+fun MainScreen(settingViewModel: SettingViewModel) {
+//    val context = LocalContext.current     //添加network选择器的地方
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     Log.i(TAG,cameraPermissionState.status.isGranted.toString())
+    val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
     val navController = rememberNavController()
     val startingScreen = if (cameraPermissionState.status.isGranted) Screens.HomeScreen else Screens.PermissionRequestScreen
     NavHost(navController = navController, startDestination = startingScreen.route) {
-        composable(Screens.HomeScreen.route) { 
+        composable(Screens.HomeScreen.route) {
             HomeScreen(navController = navController)
         }
         composable(Screens.PermissionRequestScreen.route) {
@@ -48,6 +48,9 @@ fun MainScreen() {
         }
         composable(Screens.TTSTestingScreen.route){
             TTSTestingScreen(navController = navController)
+        }
+        composable(Screens.SettingScreen.route){
+            SettingScreen(navController = navController, settingViewModel = settingViewModel)
         }
         navigation(startDestination = Screens.CameraScreen.route, route = Screens.MainCameraScreen.route) {
             composable(Screens.CameraScreen.route) {
@@ -77,3 +80,4 @@ inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(
     }
     return viewModel(parentEntry)
 }
+
