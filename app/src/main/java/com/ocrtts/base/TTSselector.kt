@@ -1,4 +1,4 @@
-//package com.ocrtts.base
+package com.ocrtts.base
 //
 //import android.content.Context
 //import android.net.ConnectivityManager

@@ -152,5 +152,4 @@ fun synthesizeAndPlayText(text: String, language: String, speed: Float, tts: Azu
     //update and play
     tts.updateVoice(voice)
     tts.startPlaying(text, speed)
-
 }

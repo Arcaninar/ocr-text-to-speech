@@ -1,8 +1,10 @@
 package com.ocrtts.ui.screens
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
-import android.media.MediaPlayer
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
@@ -14,9 +16,12 @@ import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -24,24 +29,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.ocrtts.R
-import com.ocrtts.camera.CameraTextAnalyzer
+import com.google.common.util.concurrent.ListenableFuture
+import com.ocrtts.notificationSound
+import com.ocrtts.ocr.CameraTextAnalyzer
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
@@ -50,9 +61,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import rotate
 import java.io.File
+import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+
 
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
     suspendCoroutine { continuation ->
@@ -77,7 +91,7 @@ fun CameraScreen(
     val previewView = remember { PreviewView(context) }
     val lensFacing = CameraSelector.LENS_FACING_BACK
     val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-    val preview = Preview.Builder().build()
+
     val imageAnalysis = remember {
         ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -89,14 +103,30 @@ fun CameraScreen(
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
 
-    LaunchedEffect(lensFacing) {
-        val cameraProvider = context.getCameraProvider()
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+    cameraProviderFuture.addListener({
+        val cameraProvider = cameraProviderFuture.get()
         cameraProvider.unbindAll()
+
+        val preview = Preview.Builder().build()
         preview.setSurfaceProvider(previewView.surfaceProvider)
-        val viewPort = previewView.viewPort
-        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort!!).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
+        val viewPort = previewView.viewPort!!
+        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
         cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
-    }
+
+    }, ContextCompat.getMainExecutor(context))
+
+//    please don't remove this comment, might be important but not sure lol
+//    LaunchedEffect(lensFacing) {
+//        val cameraProvider = context.getCameraProvider()
+//        cameraProvider.unbindAll()
+//        val preview = Preview.Builder().build()
+//        preview.setSurfaceProvider(previewView.surfaceProvider)
+//        val viewPort = previewView.viewPort!!
+//        viewModel.updateViewPort(viewPort)
+//        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
+//        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
+//    }
     BackHandler {
         activity?.finish() // 结束当前Activity
     }
@@ -105,56 +135,116 @@ fun CameraScreen(
             factory = { previewView },
             modifier = Modifier
                 .fillMaxSize()
-                .onGloballyPositioned { coordinates ->
-                    sharedViewModel.updateSize(coordinates.size)
+                .onGloballyPositioned { size ->
+                    sharedViewModel.updateSize(size.size)
                 }
         )
-        if (viewModel.recognizedText) {
-            NotifyUser(
-                imageCapture = imageCapture,
-                navController = navController,
-                sharedViewModel = sharedViewModel,
-                dataStoreManager = dataStoreManager
-            )
-        }
+
+        NotifyUser(
+            imageCapture = imageCapture,
+            navController = navController,
+            viewModel = viewModel,
+            sharedViewModel = sharedViewModel,
+            dataStoreManager = dataStoreManager,
+            cameraProviderFuture = cameraProviderFuture
+        )
     }
 }
 
 @Composable
-fun NotifyUser(imageCapture: ImageCapture, navController: NavController, sharedViewModel: ImageSharedViewModel, dataStoreManager: DataStoreManager, modifier: Modifier = Modifier) {
-    val audio = MediaPlayer.create(LocalContext.current, R.raw.ding)
-    audio.start()
-    Column(
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .offset(y = (-20).dp)
-            .fillMaxWidth()
-    ) {
-        Text(
-            text = "There is a text in front of you. Click the button below to view it",
-            modifier = Modifier
-                .background(Color.Yellow, RoundedCornerShape(50))
-                .padding(5.dp)
-                .fillMaxWidth(0.8f)
-        )
-        val context = LocalContext.current
-        Button(
-            onClick = {
-                onClickButton(
-                    imageCapture = imageCapture,
-                    context = context,
-                    navController = navController,
-                    sharedViewModel = sharedViewModel,
-                    dataStoreManager = dataStoreManager
-                )
-            }) {
-            CircleShape
+fun NotifyUser(
+    imageCapture: ImageCapture,
+    navController: NavController,
+    viewModel: CameraViewModel,
+    sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
+    cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
+    modifier: Modifier = Modifier,
+) {
+    if (viewModel.isRecognizedText.collectAsStateWithLifecycle().value) {
+        if (!viewModel.hasTextBefore.collectAsStateWithLifecycle().value) {
+            notificationSound.start()
+            viewModel.updateHasText(true)
         }
+
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = modifier
+                .offset(y = (-10).dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = "There is a text in front of you. Click the button below to view it",
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .background(Color.White, RoundedCornerShape(50))
+                    .padding(5.dp)
+                    .fillMaxWidth(0.8f)
+            )
+            Spacer(modifier = Modifier.padding(5.dp))
+            val context = LocalContext.current
+            Box(
+                contentAlignment= Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .border(
+                        width = 2.dp,
+                        color = Color.White,
+                        shape = CircleShape
+                    )
+                    .clickable {
+                        onClickButton(
+                            imageCapture = imageCapture,
+                            context = context,
+                            navController = navController,
+                            sharedViewModel = sharedViewModel,
+                            dataStoreManager = dataStoreManager,
+                            cameraProviderFuture = cameraProviderFuture
+                        )
+                    }
+            ){
+                //internal circle with icon
+                Icon(
+                    imageVector = Icons.Filled.Circle,
+                    contentDescription = "contentDescription",
+                    modifier = Modifier
+                        .size(30.dp)
+                        .background(Color.White, CircleShape)
+                        .padding(2.dp),
+                    tint = Color.White
+                )
+            }
+//            Button(
+//                onClick = {
+//                    onClickButton(
+//                        imageCapture = imageCapture,
+//                        context = context,
+//                        navController = navController,
+//                        sharedViewModel = sharedViewModel,
+//                        dataStoreManager = dataStoreManager,
+//                        cameraProviderFuture = cameraProviderFuture
+//                    )
+//
+//
+//                }) {
+//                CircleShape
+//            }
+        }
+    }
+    else {
+      viewModel.updateHasText(false)
     }
 }
 
-fun onClickButton(imageCapture: ImageCapture, context: Context, navController: NavController, sharedViewModel: ImageSharedViewModel, dataStoreManager: DataStoreManager) {
+fun onClickButton(
+    imageCapture: ImageCapture,
+    context: Context,
+    navController: NavController,
+    sharedViewModel: ImageSharedViewModel,
+    dataStoreManager: DataStoreManager,
+    cameraProviderFuture: ListenableFuture<ProcessCameraProvider>
+) {
     val TAG = "ImageCapture"
     val outputDirectory = context.filesDir
     val photoFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
@@ -163,14 +253,58 @@ fun onClickButton(imageCapture: ImageCapture, context: Context, navController: N
 
     imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
+            @SuppressLint("RestrictedApi")
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                 val path = photoFile.absolutePath
                 Log.d(TAG, "Photo capture succeeded: $path")
-                // Update ViewModel with the captured image file
+
                 CoroutineScope(Dispatchers.IO).launch {
                     dataStoreManager.addImageToHistory(photoFile.absolutePath)
                 }
-                sharedViewModel.setFileName(path)
+
+                val exif = ExifInterface(path)
+                val rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
+
+                val rotationDegrees = when (rotation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                    ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                    ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                    else -> 0f
+                }
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    lateinit var image: Bitmap
+                    if (rotationDegrees == 0f) {
+                        image = BitmapFactory.decodeFile(path)
+                    }
+                    else {
+                        image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+                        val size = sharedViewModel.size
+                        image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val outputStream = FileOutputStream(photoFile)
+                            image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                            outputStream.close()
+                        }
+                    }
+                    sharedViewModel.setImageInfo(path, image)
+                }
+
+//                var image = BitmapFactory.decodeFile(path)
+//
+//                if (rotationDegrees != 0f) {
+//                    image = image.rotate(rotationDegrees)
+//                    val size = sharedViewModel.size
+//                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+//                    CoroutineScope(Dispatchers.IO).launch {
+//                        val outputStream = FileOutputStream(photoFile)
+//                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+//                        outputStream.close()
+//                    }
+//                }
+//
+//                sharedViewModel.setImageInfo(path, image)
+                cameraProviderFuture.get().unbindAll()
                 navController.navigate(Screens.ImageScreen.route)
             }
 

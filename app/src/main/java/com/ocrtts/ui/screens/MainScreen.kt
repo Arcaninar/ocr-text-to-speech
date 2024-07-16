@@ -3,6 +3,7 @@
 package com.ocrtts.ui.screens
 
 import HistoryScreen
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -26,6 +27,7 @@ import com.ocrtts.ui.viewmodels.SettingViewModel
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
 private const val TAG="MainScreen"
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
