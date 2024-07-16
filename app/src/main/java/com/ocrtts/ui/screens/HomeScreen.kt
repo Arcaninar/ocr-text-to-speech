@@ -98,5 +98,18 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 tint = Color.White,
                 modifier = Modifier.size(30.dp))
         }
+
+        IconButton(
+            onClick = { navController.navigate(Screens.SettingScreen.route) },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_settings),
+                contentDescription = "SettingScreen",
+                tint = Color.Yellow,
+                modifier = Modifier.size(30.dp))
+        }
     }
 }

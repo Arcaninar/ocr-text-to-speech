@@ -36,7 +36,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,8 +52,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.common.util.concurrent.ListenableFuture
-
-import com.ocrtts.camera.CameraTextAnalyzer
+import com.ocrtts.notificationSound
+import com.ocrtts.ocr.CameraTextAnalyzer
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
@@ -70,6 +69,7 @@ import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import android.content.pm.ActivityInfo
+
 
 
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
@@ -125,8 +125,17 @@ fun CameraScreen(
 
     }, ContextCompat.getMainExecutor(context))
 
-
-
+//    please don't remove this comment, might be important but not sure lol
+//    LaunchedEffect(lensFacing) {
+//        val cameraProvider = context.getCameraProvider()
+//        cameraProvider.unbindAll()
+//        val preview = Preview.Builder().build()
+//        preview.setSurfaceProvider(previewView.surfaceProvider)
+//        val viewPort = previewView.viewPort!!
+//        viewModel.updateViewPort(viewPort)
+//        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
+//        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
+//    }
     BackHandler {
         Log.d("BackHandler", "Back button pressed")
         navController.navigate(Screens.HomeScreen.route) {
@@ -171,7 +180,7 @@ fun NotifyUser(
 ) {
     if (viewModel.isRecognizedText.collectAsStateWithLifecycle().value) {
         if (!viewModel.hasTextBefore.collectAsStateWithLifecycle().value) {
-
+            notificationSound.start()
             viewModel.updateHasText(true)
         }
 
@@ -280,30 +289,38 @@ fun onClickButton(
                     else -> 0f
                 }
 
-//                TimingUtility.measureExecutionTime("rotate and scale bitmap") {
-//                    val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-//
-//                    val size = sharedViewModel.size
-//                    val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
-//                }
-
-                if (rotationDegrees != 0f) {
-                    val bitmap = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-                    val size = sharedViewModel.size
-                    val realBitmap = Bitmap.createScaledBitmap(bitmap, size.width, size.height, true)
-
-                    val outputStream = FileOutputStream(photoFile)
-                    realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                    outputStream.close()
-
-//                    TimingUtility.measureExecutionTime("save file") {
-//                        val outputStream = FileOutputStream(photoFile)
-//                        realBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-//                        outputStream.close()
-//                    }
+                CoroutineScope(Dispatchers.Main).launch {
+                    lateinit var image: Bitmap
+                    if (rotationDegrees == 0f) {
+                        image = BitmapFactory.decodeFile(path)
+                    }
+                    else {
+                        image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+                        val size = sharedViewModel.size
+                        image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val outputStream = FileOutputStream(photoFile)
+                            image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                            outputStream.close()
+                        }
+                    }
+                    sharedViewModel.setImageInfo(path, image)
                 }
 
-                sharedViewModel.setFileName(path)
+//                var image = BitmapFactory.decodeFile(path)
+//
+//                if (rotationDegrees != 0f) {
+//                    image = image.rotate(rotationDegrees)
+//                    val size = sharedViewModel.size
+//                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+//                    CoroutineScope(Dispatchers.IO).launch {
+//                        val outputStream = FileOutputStream(photoFile)
+//                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+//                        outputStream.close()
+//                    }
+//                }
+//
+//                sharedViewModel.setImageInfo(path, image)
                 cameraProviderFuture.get().unbindAll()
                 navController.navigate(Screens.ImageScreen.route)
             }

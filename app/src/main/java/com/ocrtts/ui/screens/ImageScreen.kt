@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +39,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -57,6 +58,14 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.coroutines.suspendCoroutine
+import com.ocrtts.base.AzureTextSynthesis
+import com.ocrtts.ocr.analyzeOCR
+import com.ocrtts.type.OCRText
+import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import com.ocrtts.ui.viewmodels.ImageViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import java.io.File
 
 
 fun imageToBitmap(image: Image): Bitmap {
@@ -134,6 +143,7 @@ fun ImageScreen(
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
+                        synthesizeAndPlayText(viewModel.ocrTextSelected.text, "en-US", 1.0f, AzureTextSynthesis("en-GB-SoniaNeural"))
                         // text: viewModel.OCRTextSelected!!.text
                         // language: en
                     }
@@ -147,16 +157,36 @@ fun ImageScreen(
         }
     }
 
+    val context = LocalContext.current
+    val fileName = sharedViewModel.fileName.collectAsStateWithLifecycle().value
+    val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
+    val viewSize = sharedViewModel.size
+
     LaunchedEffect(viewModel.ocrTextList) {
         if (viewModel.ocrTextList == null) {
-            analyzeOCR(image = bitmap, viewSize = viewSize, viewModel::onTextRecognized)
+            val imageSize = IntSize(image.width, image.height)
+            analyzeOCR(viewSize = viewSize, imageSize, fileName, context, viewModel::onTextRecognized)
         }
     }
 
-    val zoom = remember { mutableStateOf(1f) }
-    val offsetX = remember { mutableStateOf(0f) }
-    val offsetY = remember { mutableStateOf(0f) }
-    val angle = remember { mutableStateOf(0f) }
+
+//    LaunchedEffect(viewModel.isFinishedAnalysing) {
+//        if (!viewModel.isFinishedAnalysing) {
+//            analyzeOCR(image = bitmap, viewSize = viewSize, viewModel)
+//
+//            viewModel.finishedAnalyzing()
+//            if (textRectList.isNotEmpty()) {
+//                viewModel.imageContainsText()
+//                viewModel.updateTextRectList(textRectList)
+//            }
+//        }
+//    }
+
+//    LaunchedEffect(viewModel.ocrTextList) {
+//        if (viewModel.ocrTextList.isNotEmpty()) {
+//            viewModel.imageContainsText()
+//        }
+//    }
 
     Surface(modifier = modifier.background(Color.Transparent)) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -254,6 +284,43 @@ fun ImageScreen(
                 Icon(
                     painter = painterResource(id = R.drawable.album),
                     contentDescription = "Album Icon",
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            else {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .width(64.dp)
+                        .align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+            IconButton(
+                onClick = { navController.navigate(Screens.CameraScreen.route) },
+                modifier = Modifier
+                    .size(75.dp)
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "Back to video",
+                    tint = Color.White,
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+            IconButton(
+                onClick = { navController.navigate(Screens.HistoryScreen.route) },
+                modifier = Modifier
+                    .size(75.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.history),
+                    contentDescription = "History Icon",
                     tint = Color.White,
                     modifier = Modifier.size(30.dp)
                 )
