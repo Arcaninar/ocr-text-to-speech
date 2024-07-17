@@ -56,11 +56,7 @@ fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier
                     iconId = R.drawable.ic_launcher_foreground,
                     onClick = {
                         azureTTS = AzureTextSynthesis("en-GB-SoniaNeural")
-<<<<<<< HEAD
-                        synthesizeAndPlayText("Hi I am Pathfinder! Defines an offset line that can be used by parent layouts to align and position their children. Text baselines are representative examples of AlignmentLines. For example, they can be used by Row, to align its children by baseline, or by paddingFrom to achieve a layout with a specific distance from the top to the baseline of the text content. AlignmentLines can be understood as an abstraction over text baselines.", "en-US", 1.0f, azureTTS) }
-=======
                         synthesizeAndPlayText("你好，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。Hi I am Pathfinder! Defines an offset line that can be used by parent layouts to align and position their children. Text baselines are representative examples of AlignmentLines. For example, they can be used by Row, to align its children by baseline, or by paddingFrom to achieve a layout with a specific distance from the top to the baseline of the text content. AlignmentLines can be understood as an abstraction over text baselines.", "en-US", 1.0f, azureTTS) }
->>>>>>> origin/main
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 TriggerButton(
@@ -68,11 +64,7 @@ fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier
                     iconId = R.drawable.ic_launcher_foreground,
                     onClick = {
                         azureTTS = AzureTextSynthesis("zh-HK-HiuMaanNeural")
-<<<<<<< HEAD
-                        synthesizeAndPlayText("你好，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。例如， 可以使用它们来Row按基线对齐其子布局，或者 来paddingFrom实现从顶部到文本内容基线的特定距离的布局。AlignmentLines 可以理解为对文本基线的抽象。", "zh-HK", 1.0f, azureTTS) }
-=======
                         synthesizeAndPlayText("Hi I am Pathfinder! Defines an offset line that can be used by parent layouts to align and position their children.你好，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。例如， 可以使用它们来Row按基线对齐其子布局，或者 来paddingFrom实现从顶部到文本内容基线的特定距离的布局。AlignmentLines 可以理解为对文本基线的抽象。", "zh-HK", 1.0f, azureTTS) }
->>>>>>> origin/main
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 TriggerButton(
@@ -80,11 +72,7 @@ fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier
                     iconId = R.drawable.ic_launcher_foreground,
                     onClick = {
                         azureTTS = AzureTextSynthesis("zh-TW-HsiaoChenNeural")
-<<<<<<< HEAD
-                        synthesizeAndPlayText("嗨，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。例如， 可以使用它们来Row按基线对齐其子布局，或者 来paddingFrom实现从顶部到文本内容基线的特定距离的布局。AlignmentLines 可以理解为对文本基线的抽象。", "zh-TW", 1.0f, azureTTS) }
-=======
                         synthesizeAndPlayText("Hi I am Pathfinder! Defines an offset line that can be used by parent layouts to align and position their children.嗨，我是探路者！定义父布局可使用它来对齐和定位其子布局的偏移线。文本基线是AlignmentLines 的典型示例。例如， 可以使用它们来Row按基线对齐其子布局，或者 来paddingFrom实现从顶部到文本内容基线的特定距离的布局。AlignmentLines 可以理解为对文本基线的抽象。", "zh-TW", 1.0f, azureTTS) }
->>>>>>> origin/main
                 )
             }
 //            Button(

@@ -30,12 +30,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,14 +63,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import rotate
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import android.content.pm.ActivityInfo
-
-
+import rotate
 
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
     suspendCoroutine { continuation ->
@@ -125,23 +123,11 @@ fun CameraScreen(
 
     }, ContextCompat.getMainExecutor(context))
 
-//    please don't remove this comment, might be important but not sure lol
-//    LaunchedEffect(lensFacing) {
-//        val cameraProvider = context.getCameraProvider()
-//        cameraProvider.unbindAll()
-//        val preview = Preview.Builder().build()
-//        preview.setSurfaceProvider(previewView.surfaceProvider)
-//        val viewPort = previewView.viewPort!!
-//        viewModel.updateViewPort(viewPort)
-//        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
-//        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
-//    }
     BackHandler {
         Log.d("BackHandler", "Back button pressed")
         navController.navigate(Screens.HomeScreen.route) {
             popUpTo(Screens.HomeScreen.route) {
                 inclusive = true
-//                saveState = true
             }
             launchSingleTop = true
             restoreState = true
@@ -220,8 +206,7 @@ fun NotifyUser(
                             cameraProviderFuture = cameraProviderFuture
                         )
                     }
-            ){
-                //internal circle with icon
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Circle,
                     contentDescription = "contentDescription",
@@ -232,25 +217,9 @@ fun NotifyUser(
                     tint = Color.White
                 )
             }
-//            Button(
-//                onClick = {
-//                    onClickButton(
-//                        imageCapture = imageCapture,
-//                        context = context,
-//                        navController = navController,
-//                        sharedViewModel = sharedViewModel,
-//                        dataStoreManager = dataStoreManager,
-//                        cameraProviderFuture = cameraProviderFuture
-//                    )
-//
-//
-//                }) {
-//                CircleShape
-//            }
         }
-    }
-    else {
-      viewModel.updateHasText(false)
+    } else {
+        viewModel.updateHasText(false)
     }
 }
 
@@ -290,37 +259,20 @@ fun onClickButton(
                 }
 
                 CoroutineScope(Dispatchers.Main).launch {
-                    lateinit var image: Bitmap
-                    if (rotationDegrees == 0f) {
-                        image = BitmapFactory.decodeFile(path)
-                    }
-                    else {
-                        image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+                    var image = BitmapFactory.decodeFile(path)
+                    if (rotationDegrees != 0f) {
+                        image = image.rotate(rotationDegrees)
                         val size = sharedViewModel.size
                         image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
                         CoroutineScope(Dispatchers.IO).launch {
-                            val outputStream = FileOutputStream(photoFile)
-                            image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                            outputStream.close()
+                            FileOutputStream(photoFile).use { outputStream ->
+                                image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                            }
                         }
                     }
                     sharedViewModel.setImageInfo(path, image)
                 }
 
-//                var image = BitmapFactory.decodeFile(path)
-//
-//                if (rotationDegrees != 0f) {
-//                    image = image.rotate(rotationDegrees)
-//                    val size = sharedViewModel.size
-//                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-//                    CoroutineScope(Dispatchers.IO).launch {
-//                        val outputStream = FileOutputStream(photoFile)
-//                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-//                        outputStream.close()
-//                    }
-//                }
-//
-//                sharedViewModel.setImageInfo(path, image)
                 cameraProviderFuture.get().unbindAll()
                 navController.navigate(Screens.ImageScreen.route)
             }
@@ -331,12 +283,12 @@ fun onClickButton(
         }
     )
 }
-
 @Composable
-fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier=Modifier) {
+fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier = Modifier) {
     Box(modifier = modifier) {
         OCRTexts.forEach { textRect ->
             Box(
+
                 modifier = Modifier
                     .offset(
                         x = textRect.rect.left.dp,
@@ -347,7 +299,6 @@ fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier=Modifier) {
                         height = (textRect.rect.bottom - textRect.rect.top).dp
                     )
                     .background(Color.Yellow.copy(alpha = 0.5f))
-//                    .clickable { /* Handle text selection */ }
             ) {
                 Text(text = textRect.text, color = Color.White)
             }
@@ -356,7 +307,7 @@ fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier=Modifier) {
 }
 
 @Composable
-fun ControlButtons(modifier: Modifier=Modifier, onCapture: () -> Unit) {
+fun ControlButtons(modifier: Modifier = Modifier, onCapture: () -> Unit) {
     Column(
         modifier = modifier
             .padding(16.dp)

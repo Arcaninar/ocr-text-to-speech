@@ -71,7 +71,7 @@ fun HistoryScreen(
                                 .aspectRatio(1f) // Ensure square aspect ratio
                                 .background(Color.Gray)
                                 .clickable {
-                                    sharedViewModel.setFileName(file.absolutePath)
+                                    sharedViewModel.setImageInfo(file.absolutePath, bitmap)
                                     navController.navigate(Screens.ImageScreen.route)
                                 }
                         ) {

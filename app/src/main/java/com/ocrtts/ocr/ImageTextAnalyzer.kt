@@ -139,7 +139,7 @@ suspend fun analyzeOCR(viewSize: IntSize, imageSize: IntSize, imagePath: String,
     // do online analysis if internet is online, otherwise offline
     val scaleFactor = getScaleFactor(viewSize, imageSize)
 
-    val hasInternet = true
+    val hasInternet = false
     if (hasInternet) {
         OnlineOCR.analyzeOCR(imagePath, false, scaleFactor, onTextRecognized)
     }
@@ -348,4 +348,12 @@ fun convertToOCRText(texts: List<Text.TextBlock>, scaleFactor: Pair<Float, Float
     }
 
     return ocrTexts
+}
+fun adjustRect(rect: Rect): Rect {
+    val left = if (rect.left < 0) 0 else rect.left
+    val top = if (rect.top < 0) 0 else rect.top
+    val right = if (rect.right < 0) 0 else rect.right
+    val bottom = if (rect.bottom < 0) 0 else rect.bottom
+
+    return Rect(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
 }

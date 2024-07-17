@@ -24,11 +24,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.ocrtts.camera.analyzeOCR
+import com.ocrtts.ocr.analyzeOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import com.ocrtts.utils.processImage
@@ -46,15 +47,18 @@ fun AlbumScreen(
     val fileName by sharedViewModel.fileName.collectAsStateWithLifecycle()
     val file = File(fileName)
     val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+    val context = LocalContext.current
 
     LaunchedEffect(viewModel.ocrTextList) {
         if (viewModel.ocrTextList == null) {
-            analyzeOCR(image = bitmap, viewSize = sharedViewModel.size, viewModel::onTextRecognized)
+            val imageSize = IntSize(bitmap.width, bitmap.height)
+            analyzeOCR(imageSize = imageSize, viewSize = sharedViewModel.size, imagePath = fileName, context = context,
+                onTextRecognized = viewModel::onTextRecognized
+            )
         }
     }
 
     // 获取 OCR 文本列表并处理图片
-    val context = LocalContext.current
     val displayMetrics = context.resources.displayMetrics
     val screenWidth = displayMetrics.widthPixels
     val screenHeight = displayMetrics.heightPixels
@@ -115,8 +119,7 @@ fun AlbumScreen(
                                 )
                                 .pointerInput(Unit) {
                                     detectTransformGestures(
-                                        onGesture = { _, pan, gestureZoom, gestureRotate ->
-                                            angle += gestureRotate
+                                        onGesture = { _, pan, gestureZoom,_ ->
                                             zoom *= gestureZoom
                                             offsetX += pan.x
                                             offsetY += pan.y

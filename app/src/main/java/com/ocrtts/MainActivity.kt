@@ -22,7 +22,7 @@ import com.ocrtts.ui.viewmodels.SettingViewModelFactory
 
 lateinit var notificationSound: MediaPlayer
 
-lateinit var notificationSound: MediaPlayer
+class MainActivity : ComponentActivity() {
 
     private lateinit var settingViewModel: SettingViewModel
 
