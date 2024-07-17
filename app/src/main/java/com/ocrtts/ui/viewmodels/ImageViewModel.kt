@@ -34,6 +34,8 @@ class ImageViewModel : ViewModel() {
         Log.i("ViewModel", ocrTextList.size.toString())
     }
 
+    fun resetFinishedAnalysing() { isFinishedAnalysing = false }
+
     fun updateTextRectSelected(value: OCRText) { ocrTextSelected = value }
 
     fun incrementLongTouch() { longTouchCounter += 1 }

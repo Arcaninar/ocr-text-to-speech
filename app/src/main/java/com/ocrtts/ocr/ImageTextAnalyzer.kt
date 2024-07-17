@@ -1,6 +1,8 @@
 package com.ocrtts.ocr
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.YuvImage
 import android.net.Uri
@@ -26,26 +28,41 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.ocrtts.BuildConfig
+import com.ocrtts.imageCacheFile
 import com.ocrtts.type.OCRText
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import rotate
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.io.path.Path
+import kotlin.io.path.writeBytes
 
 @OptIn(ExperimentalGetImage::class)
 suspend fun analyzeCameraOCR(image: ImageProxy, rotationDegree: Int, onTextRecognized: (OCRText) -> Unit) {
     // depends on user setting whether want to be accurate, or faster and save more battery
+    val hasText: Boolean
     val useOnline = false
+
     if (useOnline) {
         val base64EncodedImage = image.convertToBase64()
-        OnlineOCR.analyzeOCR(base64EncodedImage, true, onTextRecognized = onTextRecognized)
+        hasText = OnlineOCR.analyzeOCR(base64EncodedImage, true, onTextRecognized = onTextRecognized)
     }
     else {
         val inputImage = InputImage.fromMediaImage(image.image!!, rotationDegree)
-        OfflineOCR.analyzeOCR(inputImage, true, onTextRecognized = onTextRecognized)
+        hasText = OfflineOCR.analyzeOCR(inputImage, true, onTextRecognized = onTextRecognized)
+    }
+
+    withContext(Dispatchers.IO) {
+        if (hasText) {
+            saveImageCache(image.toBitmap(), image.imageInfo.rotationDegrees)
+        }
     }
 }
 
@@ -70,6 +87,18 @@ private fun ImageProxy.convertToBase64(): String {
     val imageBytes = out.toByteArray()
 
     return Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+}
+
+private fun saveImageCache(image: Bitmap, rotationDegree: Int) {
+
+    val savedImage = image.rotate(rotationDegree.toFloat())
+    val outputStream = FileOutputStream(imageCacheFile)
+    savedImage.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+    outputStream.flush()
+    outputStream.close()
+//    val path = Path(filePath)
+//    path.writeBytes(pictureBytes)
+    Log.i("SavedFile", "Image saved to: ${imageCacheFile.absolutePath}")
 }
 
 suspend fun analyzeImageOCR(viewSize: IntSize, imageSize: IntSize, imagePath: String, context: Context, onTextRecognized: (OCRText) -> Unit) {
@@ -116,7 +145,9 @@ object OnlineOCR {
         model = "builtin/latest"
     }
 
-    suspend fun analyzeOCR(base64EncodedImage: String, onlyDetect: Boolean, scaleFactor: Pair<Float, Float> = Pair(0f, 0f), onTextRecognized: (OCRText) -> Unit) {
+    suspend fun analyzeOCR(base64EncodedImage: String, onlyDetect: Boolean, scaleFactor: Pair<Float, Float> = Pair(0f, 0f), onTextRecognized: (OCRText) -> Unit): Boolean {
+        var hasText = false
+
         val image = Image().apply {
             content = base64EncodedImage
         }
@@ -139,8 +170,13 @@ object OnlineOCR {
             withContext(Dispatchers.Default) {
                 val responses = annotateRequest.execute()
                 val response = responses.responses.firstOrNull()
+                val text = response?.fullTextAnnotation?.text ?: ""
+                if (text.isNotBlank()) {
+                    hasText = true
+                }
+
                 if (onlyDetect) {
-                    onTextRecognized(OCRText(response?.fullTextAnnotation?.text ?: ""))
+                    onTextRecognized(OCRText(text))
                 }
                 else {
                     convertToOCRText(response, scaleFactor, onTextRecognized)
@@ -149,6 +185,8 @@ object OnlineOCR {
         } catch (e: Exception) {
             Log.e(TAG, "Error processing image for online text recognition: ${e.message}")
         }
+
+        return hasText
     }
 
     private suspend fun convertToOCRText(response: AnnotateImageResponse?, scaleFactor: Pair<Float, Float>, onTextRecognized: (OCRText) -> Unit) {
@@ -198,12 +236,18 @@ object OfflineOCR {
     private const val TAG = "OfflineOCR"
     private val textRecognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
 
-    suspend fun analyzeOCR(image: InputImage, onlyDetect: Boolean, scaleFactor: Pair<Float, Float> = Pair(0f, 0f), onTextRecognized: (OCRText) -> Unit) {
+    suspend fun analyzeOCR(image: InputImage, onlyDetect: Boolean, scaleFactor: Pair<Float, Float> = Pair(0f, 0f), onTextRecognized: (OCRText) -> Unit): Boolean {
+        var hasText = false
         Log.i(TAG, "running offlineOCR")
         suspendCoroutine { continuation ->
             textRecognizer.process(image)
                 .addOnSuccessListener { visionText ->
                     continuation.resume(Unit)
+                    val text = visionText.text
+                    if (text.isNotBlank()) {
+                        hasText = true
+                    }
+
                     if (onlyDetect) {
                         onTextRecognized(OCRText(text = visionText.text))
                     }
@@ -216,6 +260,8 @@ object OfflineOCR {
                     Log.e(TAG, "Error processing image for offline text recognition: ${e.message}")
                 }
         }
+
+        return hasText
     }
 
     private fun convertToOCRText(texts: List<Text.TextBlock>, scaleFactor: Pair<Float, Float>, onTextRecognized: (OCRText) -> Unit) {

@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -44,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
 import com.ocrtts.base.AzureTextSynthesis
+import com.ocrtts.imageCacheFile
 import com.ocrtts.ocr.analyzeImageOCR
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
@@ -139,7 +139,11 @@ fun ImageScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             if (viewModel.isFinishedAnalysing) {
                 if (viewModel.ocrTextList.isEmpty()) {
-                    Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
+//                    Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
+                    val cachePath = imageCacheFile.absolutePath
+                    val cacheImage = BitmapFactory.decodeFile(cachePath)
+                    sharedViewModel.setImageInfo(cachePath, cacheImage)
+                    viewModel.resetFinishedAnalysing()
                 }
                 else {
                     Image(

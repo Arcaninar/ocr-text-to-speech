@@ -18,9 +18,11 @@ import com.ocrtts.ui.screens.MainScreen
 import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 import com.ocrtts.ui.viewmodels.SettingViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModelFactory
+import java.io.File
 
-
+// temporary variables, will be moved to better place/structure
 lateinit var notificationSound: MediaPlayer
+lateinit var imageCacheFile: File
 
 class MainActivity : ComponentActivity() {
 
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             notificationSound = MediaPlayer.create(LocalContext.current, R.raw.ding)
+            imageCacheFile = File(LocalContext.current.getExternalFilesDir(null), "image_cache.jpeg")
             OCRTextToSpeechTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

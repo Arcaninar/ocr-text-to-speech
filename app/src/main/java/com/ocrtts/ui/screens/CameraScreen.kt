@@ -265,9 +265,10 @@ fun onClickButton(
                     image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
                     val size = sharedViewModel.size
                     image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-                    CoroutineScope(Dispatchers.Main).launch {
+                    CoroutineScope(Dispatchers.IO).launch {
                         val outputStream = FileOutputStream(photoFile)
                         image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                        outputStream.flush()
                         outputStream.close()
                     }
                 }
