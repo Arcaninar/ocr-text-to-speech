@@ -15,9 +15,12 @@ import androidx.compose.ui.platform.LocalContext
 import com.ocrtts.ui.screens.MainScreen
 import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ocrtts.base.OfflineTextSynthesis
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.viewmodels.SettingViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModelFactory
+import java.util.Locale
 
 
 lateinit var notificationSound: MediaPlayer
@@ -28,6 +31,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //offline variable
+        val offlineTextSynthesis = OfflineTextSynthesis(this)
+        offlineTextSynthesis.setLanguage(Locale.US)
+
 
         val dataStoreManager = DataStoreManager(applicationContext)
         val factory = SettingViewModelFactory(dataStoreManager)

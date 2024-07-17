@@ -1,8 +1,10 @@
 package com.ocrtts.ui.screens
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.media.AudioTrack
 import android.media.Image
 import android.util.Log
 import androidx.annotation.OptIn
@@ -38,6 +40,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,12 +48,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
 import com.ocrtts.base.AzureTextSynthesis
+import com.ocrtts.base.OfflineTextSynthesis
 import com.ocrtts.ocr.analyzeOCR
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
+import com.ocrtts.ui.viewmodels.TTSViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.selects.selectUnbiased
 import java.io.File
 
 
@@ -79,8 +85,13 @@ fun ImageScreen(
     sharedViewModel: ImageSharedViewModel,
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: ImageViewModel = viewModel()
+    viewModel: ImageViewModel = viewModel(),
+    ttsViewModel: TTSViewModel = viewModel()
 ) {
+    //offline tts try
+//    val context = LocalContext.current
+//    val offlineTTS = OfflineTextSynthesis(context)
+//    var azureTTS = remember { AzureTextSynthesis("en-GB-SoniaNeural") }
     val interactionSource = remember { MutableInteractionSource() }
 
     LaunchedEffect(interactionSource) {
@@ -109,9 +120,11 @@ fun ImageScreen(
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
-                        synthesizeAndPlayText(viewModel.ocrTextSelected.text, "en-US", 1.0f, AzureTextSynthesis("en-GB-SoniaNeural"))
-                        // text: viewModel.OCRTextSelected!!.text
-                        // language: en
+                        ttsViewModel.speak(viewModel.ocrTextSelected.text, 1.0f)
+//                        azureTTS.stopSynthesis()
+//                        sAP(viewModel.ocrTextSelected.text, 1.0f, offlineTTS)
+//                        synthesizeAndPlayText(viewModel.ocrTextSelected.text, "en-US", 1.0f, AzureTextSynthesis("en-GB-SoniaNeural"))
+
                     }
                 }
 

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ocrtts.R
 import com.ocrtts.base.AzureTextSynthesis
+import com.ocrtts.base.OfflineTextSynthesis
 
 @Composable
 fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier){
@@ -91,7 +92,9 @@ fun TTSTestingScreen(navController: NavController, modifier: Modifier = Modifier
         }
 
         IconButton(
-            onClick = { navController.navigate(Screens.HomeScreen.route) },
+            onClick = {
+                azureTTS.stopSynthesis()
+                navController.navigate(Screens.HomeScreen.route) },
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp)
@@ -153,3 +156,11 @@ fun synthesizeAndPlayText(text: String, language: String, speed: Float, tts: Azu
     tts.updateVoice(voice)
     tts.startPlaying(text, speed)
 }
+
+
+fun sAP(text: String, rate: Float, tts: OfflineTextSynthesis) {
+    tts.setSpeechRate(rate)
+    tts.speak(text)
+}
+
+
