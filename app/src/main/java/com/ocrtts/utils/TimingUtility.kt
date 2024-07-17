@@ -1,5 +1,6 @@
 package com.ocrtts.utils
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,7 @@ object TimingUtility {
         }
     }
 
+    @SuppressLint("ComposeNamingUppercase")
     @Composable
     fun measureComposableExecutionTime(description: String = "", function: @Composable () -> Unit) {
         val duration = measureTimeMillis {

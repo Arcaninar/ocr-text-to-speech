@@ -13,8 +13,8 @@ class CameraViewModel : ViewModel() {
     private val _hasTextBefore = MutableStateFlow(false)
     val hasTextBefore = _hasTextBefore.asStateFlow()
 
-    fun updateRecognizedText(textList: List<OCRText>) {
-        _isRecognizedText.value = textList[0].text.isNotBlank()
+    fun updateRecognizedText(text: OCRText) {
+        _isRecognizedText.value = text.text.isNotBlank()
     }
 
     fun updateHasText(value: Boolean) {

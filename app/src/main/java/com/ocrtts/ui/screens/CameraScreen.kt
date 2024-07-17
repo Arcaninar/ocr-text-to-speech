@@ -31,7 +31,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,10 +50,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.common.util.concurrent.ListenableFuture
+import com.ocrtts.history.DataStoreManager
 import com.ocrtts.notificationSound
 import com.ocrtts.ocr.CameraTextAnalyzer
-import com.ocrtts.history.DataStoreManager
-import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -177,6 +175,7 @@ fun NotifyUser(
             Text(
                 text = "There is a text in front of you. Click the button below to view it",
                 textAlign = TextAlign.Center,
+                color = Color.Black,
                 modifier = Modifier
                     .background(Color.White, RoundedCornerShape(50))
                     .padding(5.dp)
@@ -215,21 +214,6 @@ fun NotifyUser(
                     tint = Color.White
                 )
             }
-//            Button(
-//                onClick = {
-//                    onClickButton(
-//                        imageCapture = imageCapture,
-//                        context = context,
-//                        navController = navController,
-//                        sharedViewModel = sharedViewModel,
-//                        dataStoreManager = dataStoreManager,
-//                        cameraProviderFuture = cameraProviderFuture
-//                    )
-//
-//
-//                }) {
-//                CircleShape
-//            }
         }
     }
     else {
@@ -272,38 +256,23 @@ fun onClickButton(
                     else -> 0f
                 }
 
-                CoroutineScope(Dispatchers.Main).launch {
-                    lateinit var image: Bitmap
-                    if (rotationDegrees == 0f) {
-                        image = BitmapFactory.decodeFile(path)
-                    }
-                    else {
-                        image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-                        val size = sharedViewModel.size
-                        image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-                        CoroutineScope(Dispatchers.IO).launch {
-                            val outputStream = FileOutputStream(photoFile)
-                            image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                            outputStream.close()
-                        }
-                    }
-                    sharedViewModel.setImageInfo(path, image)
-                }
 
-//                var image = BitmapFactory.decodeFile(path)
-//
-//                if (rotationDegrees != 0f) {
-//                    image = image.rotate(rotationDegrees)
-//                    val size = sharedViewModel.size
-//                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-//                    CoroutineScope(Dispatchers.IO).launch {
-//                        val outputStream = FileOutputStream(photoFile)
-//                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-//                        outputStream.close()
-//                    }
-//                }
-//
-//                sharedViewModel.setImageInfo(path, image)
+                lateinit var image: Bitmap
+                if (rotationDegrees == 0f) {
+                    image = BitmapFactory.decodeFile(path)
+                }
+                else {
+                    image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
+                    val size = sharedViewModel.size
+                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        val outputStream = FileOutputStream(photoFile)
+                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                        outputStream.close()
+                    }
+                }
+                sharedViewModel.setImageInfo(path, image)
+
                 cameraProviderFuture.get().unbindAll()
                 navController.navigate(Screens.ImageScreen.route)
             }
@@ -313,42 +282,4 @@ fun onClickButton(
             }
         }
     )
-}
-
-@Composable
-fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier=Modifier) {
-    Box(modifier = modifier) {
-        OCRTexts.forEach { textRect ->
-            Box(
-                modifier = Modifier
-                    .offset(
-                        x = textRect.rect.left.dp,
-                        y = textRect.rect.top.dp
-                    )
-                    .size(
-                        width = (textRect.rect.right - textRect.rect.left).dp,
-                        height = (textRect.rect.bottom - textRect.rect.top).dp
-                    )
-                    .background(Color.Yellow.copy(alpha = 0.5f))
-//                    .clickable { /* Handle text selection */ }
-            ) {
-                Text(text = textRect.text, color = Color.White)
-            }
-        }
-    }
-}
-
-@Composable
-fun ControlButtons(modifier: Modifier=Modifier, onCapture: () -> Unit) {
-    Column(
-        modifier = modifier
-            .padding(16.dp)
-            .background(Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Button(onClick = onCapture, shape = CircleShape) {
-            Text(text = "Capture")
-        }
-    }
 }

@@ -6,7 +6,9 @@ import HistoryScreen
 import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,18 +23,36 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.history.DataStoreManager
+import com.ocrtts.ocr.OfflineOCR
+import com.ocrtts.ocr.OnlineOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
 private const val TAG="MainScreen"
 
 
+
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(settingViewModel: SettingViewModel) {
-//    val context = LocalContext.current     //添加network选择器的地方
+    //添加network选择器的地方
+
+    // initialize OnlineOCR and OfflineOCR objects so when they analyze the text, the OCR is already initialized and save some time
+    val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(coroutineScope) {
+        coroutineScope.launch {
+            OnlineOCR
+            OfflineOCR
+        }
+    }
+
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     Log.i(TAG,cameraPermissionState.status.isGranted.toString())
     val context = LocalContext.current
