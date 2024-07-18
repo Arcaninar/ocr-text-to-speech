@@ -5,7 +5,9 @@ import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.compose.ui.unit.IntSize
 import com.ocrtts.type.OCRText
+import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,7 +15,11 @@ import kotlinx.coroutines.withContext
 
 private const val TAG = "CameraTextRecognitionAnalyzer"
 
-class CameraTextAnalyzer(private val onTextRecognized: (OCRText) -> Unit, private val coroutineScope: CoroutineScope) : ImageAnalysis.Analyzer {
+class CameraTextAnalyzer(
+    private val viewModel: ImageSharedViewModel,
+    private val onTextRecognized: (OCRText) -> Unit,
+    private val coroutineScope: CoroutineScope
+) : ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false
     override fun analyze(imageProxy: ImageProxy) {
         if (!isLocked) {
@@ -32,7 +38,7 @@ class CameraTextAnalyzer(private val onTextRecognized: (OCRText) -> Unit, privat
         if (mediaImage != null) {
             try {
                 withContext(Dispatchers.Main) {
-                    analyzeCameraOCR(image, image.imageInfo.rotationDegrees, onTextRecognized)
+                    analyzeCameraOCR(image, viewModel, onTextRecognized)
                     image.close()
                     isLocked = false
                 }

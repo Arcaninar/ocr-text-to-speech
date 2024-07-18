@@ -2,7 +2,6 @@ package com.ocrtts.ui.screens
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.media.Image
 import android.util.Log
 import androidx.annotation.OptIn
@@ -27,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,13 +36,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
 import com.ocrtts.base.AzureTextSynthesis
+import com.ocrtts.history.DataStoreManager
 import com.ocrtts.imageCacheFile
 import com.ocrtts.ocr.analyzeImageOCR
 import com.ocrtts.type.OCRText
@@ -59,23 +59,16 @@ fun imageToBitmap(image: Image): Bitmap {
     return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
 }
 
-fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
-    val matrix = Matrix().apply {
-        postRotate(degrees)
-    }
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-}
-
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
     return rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y
 }
-
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun ImageScreen(
     sharedViewModel: ImageSharedViewModel,
     navController: NavController,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier,
     viewModel: ImageViewModel = viewModel()
 ) {
@@ -124,14 +117,12 @@ fun ImageScreen(
     }
 
     val context = LocalContext.current
-    val fileName = sharedViewModel.fileName.collectAsStateWithLifecycle().value
     val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
     val viewSize = sharedViewModel.size
 
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
-            val imageSize = IntSize(image.width, image.height)
-            analyzeImageOCR(viewSize = viewSize, imageSize, fileName, context, viewModel::onTextRecognized)
+            analyzeImageOCR(viewSize = viewSize, image, viewModel::onTextRecognized)
         }
     }
 
@@ -139,13 +130,14 @@ fun ImageScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             if (viewModel.isFinishedAnalysing) {
                 if (viewModel.ocrTextList.isEmpty()) {
-//                    Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
                     val cachePath = imageCacheFile.absolutePath
                     val cacheImage = BitmapFactory.decodeFile(cachePath)
-                    sharedViewModel.setImageInfo(cachePath, cacheImage)
+                    sharedViewModel.setImageInfo(cacheImage)
                     viewModel.resetFinishedAnalysing()
                 }
                 else {
+                    val isFromHistory by sharedViewModel.isFromHistory.collectAsStateWithLifecycle()
+                    viewModel.saveImageToFile(isFromHistory, image, context.filesDir, dataStoreManager)
                     Image(
                         bitmap = image.asImageBitmap(),
                         contentDescription = "Image",

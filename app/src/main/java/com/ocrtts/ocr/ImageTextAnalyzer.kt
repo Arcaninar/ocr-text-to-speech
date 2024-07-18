@@ -1,11 +1,8 @@
 package com.ocrtts.ocr
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.YuvImage
-import android.net.Uri
 import android.util.Base64
 import android.util.Log
 import androidx.annotation.OptIn
@@ -30,24 +27,21 @@ import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.ocrtts.BuildConfig
 import com.ocrtts.imageCacheFile
 import com.ocrtts.type.OCRText
-import kotlinx.coroutines.CoroutineScope
+import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import com.ocrtts.utils.modifyBitmap
+import com.ocrtts.utils.saveBitmapToFile
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import rotate
 import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.io.path.Path
-import kotlin.io.path.writeBytes
 
 @OptIn(ExperimentalGetImage::class)
-suspend fun analyzeCameraOCR(image: ImageProxy, rotationDegree: Int, onTextRecognized: (OCRText) -> Unit) {
+suspend fun analyzeCameraOCR(image: ImageProxy, viewModel: ImageSharedViewModel, onTextRecognized: (OCRText) -> Unit) {
     // depends on user setting whether want to be accurate, or faster and save more battery
     val hasText: Boolean
+    val rotation = image.imageInfo.rotationDegrees
     val useOnline = false
 
     if (useOnline) {
@@ -55,13 +49,13 @@ suspend fun analyzeCameraOCR(image: ImageProxy, rotationDegree: Int, onTextRecog
         hasText = OnlineOCR.analyzeOCR(base64EncodedImage, true, onTextRecognized = onTextRecognized)
     }
     else {
-        val inputImage = InputImage.fromMediaImage(image.image!!, rotationDegree)
+        val inputImage = InputImage.fromMediaImage(image.image!!, rotation)
         hasText = OfflineOCR.analyzeOCR(inputImage, true, onTextRecognized = onTextRecognized)
     }
 
     withContext(Dispatchers.IO) {
         if (hasText) {
-            saveImageCache(image.toBitmap(), image.imageInfo.rotationDegrees)
+            saveImageCache(image.toBitmap(), rotation, viewModel.size)
         }
     }
 }
@@ -89,29 +83,26 @@ private fun ImageProxy.convertToBase64(): String {
     return Base64.encodeToString(imageBytes, Base64.NO_WRAP)
 }
 
-private fun saveImageCache(image: Bitmap, rotationDegree: Int) {
-
-    val savedImage = image.rotate(rotationDegree.toFloat())
-    val outputStream = FileOutputStream(imageCacheFile)
-    savedImage.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-    outputStream.flush()
-    outputStream.close()
-//    val path = Path(filePath)
-//    path.writeBytes(pictureBytes)
-    Log.i("SavedFile", "Image saved to: ${imageCacheFile.absolutePath}")
+private fun saveImageCache(image: Bitmap, rotationDegree: Int, screenSize: IntSize) {
+    val finalImage = modifyBitmap(image, rotationDegree, screenSize)
+    saveBitmapToFile(imageCacheFile, finalImage)
+    Log.i("ImageCache", "Image saved to: ${imageCacheFile.absolutePath}")
 }
 
-suspend fun analyzeImageOCR(viewSize: IntSize, imageSize: IntSize, imagePath: String, context: Context, onTextRecognized: (OCRText) -> Unit) {
-    val scaleFactor = getScaleFactor(viewSize, imageSize)
+suspend fun analyzeImageOCR(viewSize: IntSize, image: Bitmap, onTextRecognized: (OCRText) -> Unit) {
+    val scaleFactor = getScaleFactor(viewSize, IntSize(image.width, image.height))
 
     // do online analysis if internet is online, otherwise offline
     val hasInternet = true
     if (hasInternet) {
-        val base64EncodedImage = Base64.encodeToString(File(imagePath).readBytes(), Base64.NO_WRAP)
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        image.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+        val byteArray = byteArrayOutputStream.toByteArray()
+        val base64EncodedImage = Base64.encodeToString(byteArray, Base64.NO_WRAP)
         OnlineOCR.analyzeOCR(base64EncodedImage, false, scaleFactor, onTextRecognized)
     }
     else {
-        val inputImage = InputImage.fromFilePath(context, Uri.fromFile(File(imagePath)))
+        val inputImage = InputImage.fromBitmap(image, 0)
         OfflineOCR.analyzeOCR(inputImage, false, scaleFactor, onTextRecognized)
     }
 }
