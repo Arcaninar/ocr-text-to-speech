@@ -17,7 +17,7 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
     init {
         isOnline = checkNetworkAvailability(context)
         if (isOnline) {
-            azureTTS = AzureTextSynthesis("en-GB-SoniaNeural")
+            azureTTS = AzureTextSynthesis("zh-HK-HiuMaanNeural")
         }
     }
 
@@ -30,10 +30,16 @@ class TTSViewModel(application: Application) : AndroidViewModel(application) {
 
     fun speak(text: String, speed: Float) {
         if (isOnline && azureTTS != null) {
+            azureTTS?.stopSynthesis()
             azureTTS?.startPlaying(text, speed)
         } else {
             offlineTTS.speak(text)
         }
+    }
+
+    fun stopAllTTS() {
+        azureTTS?.stopSynthesis()
+        offlineTTS.shutdown()
     }
 
     override fun onCleared() {

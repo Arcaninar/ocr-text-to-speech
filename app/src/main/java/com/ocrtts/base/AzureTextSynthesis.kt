@@ -124,43 +124,13 @@ class AzureTextSynthesis(voice: String) {
         val text = inputText ?: "Empty!"
         ttsThread.submit(SynthesisRunnable(synthesizer!!, audioTrack, lock, condition, stopState, isPaused, text, speed))
     }
-    //1
-//    fun pauseSynthesis() {
-//        synchronized(synchronizedLock) {
-//            isPaused.set(true)
-//            audioTrack.pause()
-//        }
-//    }
-//2
-//    fun pauseSynthesis() {
-//        lock.withLock {
-//            isPaused.set(true)
-//            audioTrack.pause()
-//            try {
-//                condition.await() // This can throw InterruptedException
-//            } catch (e: InterruptedException) {
-//                // Handle the interruption, maybe log it or re-interrupt the thread
-//                Thread.currentThread().interrupt() // Preserve interrupt status
-//            }
-//        }
-//    }
-//3
+
     fun pauseSynthesis() {
         lock.withLock {
             isPaused.set(true)
             audioTrack.pause()
         }
     }
-
-
-
-//    fun resumeSynthesis() {
-//        synchronized(synchronizedLock) {
-//            isPaused.set(false)
-//            synchronizedLock.notifyAll()
-//            audioTrack.play()
-//        }
-//    }
 
     fun resumeSynthesis() {
         lock.withLock {
@@ -175,10 +145,8 @@ class AzureTextSynthesis(voice: String) {
         lock.withLock {
             stopState = true
         }
-//        synchronized(synchronizedLock) {
-//            stopState = true
-//        }
-        audioTrack.pause()
+//        audioTrack.pause()
+        audioTrack.stop()
         audioTrack.flush()
     }
 
