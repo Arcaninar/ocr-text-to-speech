@@ -11,9 +11,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -22,6 +20,9 @@ import androidx.navigation.NavController
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.ui.screens.Screens
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -45,41 +46,48 @@ fun HistoryScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black) // Set background color to black
+            .background(Color.Black)
             .padding(16.dp)
     ) {
         groupedByDate.forEach { (date, files) ->
             Text(
                 text = date,
                 style = MaterialTheme.typography.subtitle1,
-                color = Color.White, // Set text color to white for better contrast
+                color = Color.White,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
             LazyVerticalGrid(
-                columns = GridCells.Fixed(4), // Set the number of columns
+                columns = GridCells.Fixed(4),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(4.dp), // Set content padding
-                verticalArrangement = Arrangement.spacedBy(4.dp), // Set vertical spacing
-                horizontalArrangement = Arrangement.spacedBy(4.dp) // Set horizontal spacing
+                contentPadding = PaddingValues(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(files) { file ->
                     if (file.exists()) {
-                        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                        Box(
-                            modifier = Modifier
-                                .aspectRatio(1f) // Ensure square aspect ratio
-                                .background(Color.Gray)
-                                .clickable {
-                                    sharedViewModel.setImageInfo(file.absolutePath, bitmap)
-                                    navController.navigate(Screens.ImageScreen.route)
-                                }
-                        ) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize() // Fill the box
-                            )
+                        var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+                        LaunchedEffect(file) {
+                            bitmap = loadThumbnail(file)
+                        }
+
+                        bitmap?.let { croppedBitmap ->
+                            Box(
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .background(Color.Gray)
+                                    .clickable {
+                                        sharedViewModel.setImageInfo(file.absolutePath, BitmapFactory.decodeFile(file.absolutePath))
+                                        navController.navigate(Screens.ImageScreen.route)
+                                    }
+                            ) {
+                                Image(
+                                    bitmap = croppedBitmap.asImageBitmap(),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     } else {
                         Log.d("HistoryScreen", "File does not exist: ${file.absolutePath}")
@@ -87,6 +95,24 @@ fun HistoryScreen(
                 }
             }
         }
+    }
+}
+
+// Safely loads a thumbnail image
+suspend fun loadThumbnail(file: File): Bitmap? = withContext(Dispatchers.IO) {
+    val originalBitmap = BitmapFactory.decodeFile(file.absolutePath)
+    originalBitmap?.let {
+        val croppedBitmap = it.cropToSquare()
+        Bitmap.createScaledBitmap(croppedBitmap, 100, 100, true)
+    }
+}
+
+// Extension function to crop a bitmap to square
+fun Bitmap.cropToSquare(): Bitmap {
+    return if (width >= height) {
+        Bitmap.createBitmap(this, (width - height) / 2, 0, height, height)
+    } else {
+        Bitmap.createBitmap(this, 0, (height - width) / 2, width, width)
     }
 }
 
