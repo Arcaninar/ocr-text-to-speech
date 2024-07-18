@@ -15,12 +15,12 @@ import androidx.navigation.NavController
 import com.ocrtts.ui.viewmodels.SettingViewModel
 import kotlinx.coroutines.launch
 
-@SuppressLint("ComposeParameterOrder")
+
 @Composable
 fun SettingScreen(
     navController: NavController,
-    modifier: Modifier = Modifier,
-    settingViewModel: SettingViewModel
+    settingViewModel: SettingViewModel,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

@@ -1,11 +1,8 @@
-@file:OptIn(ExperimentalPermissionsApi::class)
-
 package com.ocrtts.ui.screens
 
-import HistoryScreen
-import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -21,8 +18,13 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.history.DataStoreManager
+import com.ocrtts.ocr.OfflineOCR
+import com.ocrtts.ocr.OnlineOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
@@ -32,7 +34,17 @@ private const val TAG="MainScreen"
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(settingViewModel: SettingViewModel) {
-//    val context = LocalContext.current     //添加network选择器的地方
+    //添加network选择器的地方
+
+    // initialize OnlineOCR and OfflineOCR objects so when they analyze the text, the OCR is already initialized and save some time
+    LaunchedEffect(key1 = true) {
+        CoroutineScope(Dispatchers.Main).launch {
+            Log.i("InitializeOCR", "InitializeOCR")
+            OnlineOCR
+            OfflineOCR
+        }
+    }
+
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     Log.i(TAG,cameraPermissionState.status.isGranted.toString())
     val context = LocalContext.current
@@ -55,11 +67,11 @@ fun MainScreen(settingViewModel: SettingViewModel) {
         navigation(startDestination = Screens.CameraScreen.route, route = Screens.MainCameraScreen.route) {
             composable(Screens.CameraScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                CameraScreen(navController = navController, sharedViewModel = sharedViewModel, dataStoreManager = dataStoreManager)
+                CameraScreen(navController = navController, sharedViewModel = sharedViewModel)
             }
             composable(Screens.ImageScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                ImageScreen(sharedViewModel = sharedViewModel, navController = navController)
+                ImageScreen(sharedViewModel = sharedViewModel, navController = navController, dataStoreManager = dataStoreManager)
             }
             composable(Screens.HistoryScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)

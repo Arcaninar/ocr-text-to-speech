@@ -11,19 +11,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class ImageSharedViewModel : ViewModel() {
-    private val _fileName = MutableStateFlow("")
-    val fileName: StateFlow<String> = _fileName.asStateFlow()
-
     private val _image = MutableStateFlow<Bitmap?>(null)
     val image: StateFlow<Bitmap?> = _image.asStateFlow()
+
+    private val _isFromHistory = MutableStateFlow(false)
+    val isFromHistory: StateFlow<Boolean> = _isFromHistory.asStateFlow()
 
     var size by mutableStateOf(IntSize.Zero)
         private set
 
-    fun setImageInfo(path: String, image: Bitmap) {
-        _fileName.value = path
-        _image.value = image
-    }
+    fun setImageInfo(image: Bitmap) { _image.value = image }
+
+    fun updateFromHistory(value: Boolean) { _isFromHistory.value = value}
 
     fun updateSize(value: IntSize) { size = value }
 }
