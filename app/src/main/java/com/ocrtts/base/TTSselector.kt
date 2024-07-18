@@ -3,60 +3,6 @@ package com.ocrtts.base
 //import android.content.Context
 //import android.net.ConnectivityManager
 //import android.net.NetworkCapabilities
-//import androidx.compose.material3.AlertDialog
-//import androidx.compose.material3.Button
-//import androidx.compose.material3.Text
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.MutableState
-//import androidx.compose.ui.res.stringResource
-//import com.ocrtts.R
-//
-//@Composable
-//fun ShowNetworkDialog(showDialog: MutableState<Boolean>, onDismiss: () -> Unit) {
-//    if (showDialog.value) {
-//        AlertDialog(
-//            onDismissRequest = { showDialog.value = false },
-//            title = { Text(text = stringResource(id = R.string.network_error)) },
-//            text = { Text(text = stringResource(id = R.string.network_error_content)) },
-//            confirmButton = {
-//                Button(
-//                    onClick = {
-//                        showDialog.value = false
-//                        onDismiss()
-//                    }
-//                ) {
-//                    Text(stringResource(id = R.string.confirm))
-//                }
-//            }
-//        )
-//    }
-//}
-//
-//fun isNetworkConnected(context: Context): Boolean {
-//    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-//    val activeNetwork = connectivityManager.activeNetwork ?: return false
-//    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-//    return when {
-//        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-//        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-//        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-//        else -> false
-//    }
-//}
-
-
-
-
-
-
-
-
-
-
-
-//import android.content.Context
-//import android.net.ConnectivityManager
-//import android.net.NetworkCapabilities
 //import android.speech.tts.TextToSpeech
 //import android.util.Log
 //import androidx.compose.material3.AlertDialog
@@ -65,8 +11,8 @@ package com.ocrtts.base
 //import androidx.compose.runtime.Composable
 //import androidx.compose.runtime.MutableState
 //import androidx.compose.ui.res.stringResource
-//import com.innospire.smarttrafficfund.R
-//import com.innospire.smarttrafficfund.objectdetection.views.CameraViewManager.tts
+//import com.ocrtts.R
+//
 //import java.util.Locale
 //
 //@Composable
@@ -157,5 +103,52 @@ package com.ocrtts.base
 //
 //    override fun speak(text: String) {
 //        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+//    }
+//}
+
+
+
+//
+//import android.content.Context
+//import android.net.ConnectivityManager
+//import android.net.NetworkCapabilities
+//import androidx.compose.material3.AlertDialog
+//import androidx.compose.material3.Button
+//import androidx.compose.material3.Text
+//import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.MutableState
+//import androidx.compose.ui.res.stringResource
+//import com.ocrtts.R
+//
+//@Composable
+//fun ShowNetworkDialog(showDialog: MutableState<Boolean>, onDismiss: () -> Unit) {
+//    if (showDialog.value) {
+//        AlertDialog(
+//            onDismissRequest = { showDialog.value = false },
+//            title = { Text(text = stringResource(id = R.string.network_error)) },
+//            text = { Text(text = stringResource(id = R.string.network_error_content)) },
+//            confirmButton = {
+//                Button(
+//                    onClick = {
+//                        showDialog.value = false
+//                        onDismiss()
+//                    }
+//                ) {
+//                    Text(stringResource(id = R.string.confirm))
+//                }
+//            }
+//        )
+//    }
+//}
+//
+//fun isNetworkConnected(context: Context): Boolean {
+//    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+//    val activeNetwork = connectivityManager.activeNetwork ?: return false
+//    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+//    return when {
+//        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+//        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+//        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+//        else -> false
 //    }
 //}
