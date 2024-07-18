@@ -1,9 +1,6 @@
 package com.ocrtts.ui.viewmodels
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -17,7 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileOutputStream
 
 class ImageViewModel : ViewModel() {
     var ocrTextList = mutableStateListOf<OCRText>()

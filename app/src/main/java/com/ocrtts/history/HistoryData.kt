@@ -1,26 +1,14 @@
 package com.ocrtts.history
 
 import android.content.Context
-import android.util.Log
-import androidx.compose.ui.unit.IntSize
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import com.ocrtts.history.DataStoreManager.Companion.HEIGHT_KEY
-import com.ocrtts.history.DataStoreManager.Companion.WIDTH_KEY
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlin.coroutines.suspendCoroutine
 
 private val Context.dataStore by preferencesDataStore(name = "image_history")
 //private val Context.dataStore by preferencesDataStore(name = "settings")
@@ -35,10 +23,6 @@ class DataStoreManager(private val context: Context) {
         val LANG_MODEL_KEY = stringPreferencesKey("langModel")
         val SPEED_RATE_KEY = floatPreferencesKey("speedRate")
         val MODEL_TYPE_KEY = stringPreferencesKey("modelType")
-
-        // screen size
-        val WIDTH_KEY = intPreferencesKey("screenWidth")
-        val HEIGHT_KEY = intPreferencesKey("screenHeight")
     }
 
     val imageHistory: Flow<Set<String>> = context.dataStore.data
