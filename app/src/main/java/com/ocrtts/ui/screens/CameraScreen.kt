@@ -258,18 +258,18 @@ fun onClickButton(
                     else -> 0f
                 }
 
-                CoroutineScope(Dispatchers.Main).launch {
+//                CoroutineScope(Dispatchers.Main).launch {
                     var image = BitmapFactory.decodeFile(path)
                     if (rotationDegrees != 0f) {
                         image = image.rotate(rotationDegrees)
                         val size = sharedViewModel.size
                         image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-                        CoroutineScope(Dispatchers.IO).launch {
+//                        CoroutineScope(Dispatchers.IO).launch {
                             FileOutputStream(photoFile).use { outputStream ->
                                 image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
                             }
-                        }
-                    }
+//                        }
+//                    }
                     sharedViewModel.setImageInfo(path, image)
                 }
 

@@ -470,25 +470,25 @@ fun ImageScreen(
                         }
                     }
 
-                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
-                        val box = adjustRect(viewModel.ocrTextSelected.rect)
-                        Canvas(modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer(
-                                scaleX = zoom.value,
-                                scaleY = zoom.value,
-                                translationX = offsetX.value,
-                                translationY = offsetY.value
-                            )
-                        ) {
-                            val path = Path().apply {
-                                addRect(
-                                    rect = box
-                                )
-                            }
-                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-                        }
-                    }
+//                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
+//                        val box = adjustRect(viewModel.ocrTextSelected.rect)
+//                        Canvas(modifier = Modifier
+//                            .fillMaxSize()
+//                            .graphicsLayer(
+//                                scaleX = zoom.value,
+//                                scaleY = zoom.value,
+//                                translationX = offsetX.value,
+//                                translationY = offsetY.value
+//                            )
+//                        ) {
+//                            val path = Path().apply {
+//                                addRect(
+//                                    rect = box
+//                                )
+//                            }
+//                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+//                        }
+//                    }
                 }
             } else {
                 CircularProgressIndicator(
