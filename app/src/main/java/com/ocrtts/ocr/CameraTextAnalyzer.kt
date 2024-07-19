@@ -44,12 +44,12 @@ class CameraTextAnalyzer(
             } catch (e: Exception) {
                 Log.e(TAG, "Exception in processing text recognition: ${e.message}")
                 image.close() // Close imageProxy if an exception occurs before addOnCompleteListener
-                isLocked = false // not sure
+                isLocked = false
             }
         } else {
             Log.w(TAG, "No media image available for text recognition")
             image.close() // Close imageProxy if mediaImage is null
-            isLocked = false // not sure
+            isLocked = false
         }
     }
 }

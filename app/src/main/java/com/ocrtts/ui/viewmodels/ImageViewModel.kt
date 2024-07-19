@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
+private const val TAG = "ImageViewModel"
 class ImageViewModel : ViewModel() {
     var ocrTextList = mutableStateListOf<OCRText>()
         private set
@@ -38,7 +39,7 @@ class ImageViewModel : ViewModel() {
         }
 
         if (text.text.isNotBlank()) {
-            Log.i("Text", text.text)
+            Log.i(TAG + "RecognizedText", text.text)
             ocrTextList.add(text)
         }
     }
