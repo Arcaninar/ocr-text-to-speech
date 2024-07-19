@@ -4,17 +4,20 @@ import android.graphics.Matrix
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ocrtts.history.DataStoreManager
@@ -43,12 +46,51 @@ fun HistoryScreen(
         SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(file.lastModified()))
     }
 
+    var selectedImages by remember { mutableStateOf(setOf<File>()) }
+    var isSelectionMode by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
             .padding(16.dp)
     ) {
+        if (selectedImages.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Selected ${selectedImages.size} images",
+                    color = Color.White,
+                    style = MaterialTheme.typography.subtitle1
+                )
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            selectedImages.forEach { file ->
+                                file.delete()
+                            }
+                            selectedImages = emptySet()
+                            dataStoreManager.updateImageHistory()
+                            isSelectionMode = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.White,
+                        contentColor = Color.Black
+                    ),
+                    modifier = Modifier.size(100.dp, 48.dp) // Adjust the size as needed
+                ) {
+                    Text("Delete")
+                }
+            }
+        }
+
         groupedByDate.forEach { (date, files) ->
             Text(
                 text = date,
@@ -69,17 +111,39 @@ fun HistoryScreen(
                         var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
                         LaunchedEffect(file) {
-                            bitmap = loadThumbnail(file)
+                            bitmap = loadImage(file)
                         }
 
                         bitmap?.let { croppedBitmap ->
                             Box(
                                 modifier = Modifier
                                     .aspectRatio(1f)
-                                    .background(Color.Gray)
-                                    .clickable {
-                                        sharedViewModel.setImageInfo(file.absolutePath, BitmapFactory.decodeFile(file.absolutePath))
-                                        navController.navigate(Screens.ImageScreen.route)
+                                    .border(
+                                        width = 2.dp,
+                                        color = if (selectedImages.contains(file)) Color.White else Color.Transparent
+                                    )
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onLongPress = {
+                                                isSelectionMode = true
+                                                selectedImages = selectedImages + file
+                                            },
+                                            onTap = {
+                                                if (isSelectionMode) {
+                                                    if (selectedImages.contains(file)) {
+                                                        selectedImages = selectedImages - file
+                                                        if (selectedImages.isEmpty()) {
+                                                            isSelectionMode = false
+                                                        }
+                                                    } else {
+                                                        selectedImages = selectedImages + file
+                                                    }
+                                                } else {
+                                                    sharedViewModel.setImageInfo(file.absolutePath, BitmapFactory.decodeFile(file.absolutePath))
+                                                    navController.navigate(Screens.ImageScreen.route)
+                                                }
+                                            }
+                                        )
                                     }
                             ) {
                                 Image(
@@ -98,13 +162,9 @@ fun HistoryScreen(
     }
 }
 
-// Safely loads a thumbnail image
-suspend fun loadThumbnail(file: File): Bitmap? = withContext(Dispatchers.IO) {
-    val originalBitmap = BitmapFactory.decodeFile(file.absolutePath)
-    originalBitmap?.let {
-        val croppedBitmap = it.cropToSquare()
-        Bitmap.createScaledBitmap(croppedBitmap, 100, 100, true)
-    }
+// Safely loads and crops a thumbnail image
+suspend fun loadImage(file: File): Bitmap? = withContext(Dispatchers.IO) {
+    BitmapFactory.decodeFile(file.absolutePath)?.cropToSquare()
 }
 
 // Extension function to crop a bitmap to square
