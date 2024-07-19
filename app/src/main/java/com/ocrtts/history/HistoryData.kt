@@ -2,13 +2,13 @@ package com.ocrtts.history
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 
 private val Context.dataStore by preferencesDataStore(name = "image_history")
 //private val Context.dataStore by preferencesDataStore(name = "settings")
@@ -19,7 +19,7 @@ class DataStoreManager(private val context: Context) {
         private val IMAGE_HISTORY_KEY = stringSetPreferencesKey("image_history")
         private const val MAX_HISTORY_SIZE = 10
 
-        //setting variable
+        // setting variable
         val LANG_MODEL_KEY = stringPreferencesKey("langModel")
         val SPEED_RATE_KEY = floatPreferencesKey("speedRate")
         val MODEL_TYPE_KEY = stringPreferencesKey("modelType")

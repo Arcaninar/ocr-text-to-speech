@@ -1,10 +1,7 @@
 package com.ocrtts.ui.screens
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.AudioTrack
 import android.media.Image
 import android.util.Log
 import androidx.annotation.OptIn
@@ -27,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,24 +36,20 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ocrtts.R
-import com.ocrtts.base.AzureTextSynthesis
-import com.ocrtts.base.OfflineTextSynthesis
-import com.ocrtts.ocr.analyzeOCR
+import com.ocrtts.history.DataStoreManager
+import com.ocrtts.imageCacheFile
+import com.ocrtts.ocr.analyzeImageOCR
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import com.ocrtts.ui.viewmodels.TTSViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.selects.selectUnbiased
-import java.io.File
 
 
 fun imageToBitmap(image: Image): Bitmap {
@@ -67,23 +59,16 @@ fun imageToBitmap(image: Image): Bitmap {
     return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, null)
 }
 
-fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
-    val matrix = Matrix().apply {
-        postRotate(degrees)
-    }
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-}
-
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
     return rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y
 }
-
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun ImageScreen(
     sharedViewModel: ImageSharedViewModel,
     navController: NavController,
+    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier,
     viewModel: ImageViewModel = viewModel(),
     ttsViewModel: TTSViewModel = viewModel()
@@ -96,17 +81,21 @@ fun ImageScreen(
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collectLatest { interaction ->
+            if (!viewModel.isFinishedAnalysing || viewModel.ocrTextList.isEmpty()) {
+                return@collectLatest
+            }
+
             val TAG = "ImagePress"
             when (interaction) {
                 is PressInteraction.Press -> {
-                    Log.w(TAG + "test", "Pressed: ${interaction.pressPosition}")
                     val isLongClick = viewModel.longTouchCounter
 
                     val position = interaction.pressPosition
                     var hasText = false
-                    for (text in viewModel.ocrTextList ?: listOf()) {
+                    for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
+                            Log.i("TextSelected", text.text)
                             hasText = true
                             break
                         }
@@ -137,24 +126,27 @@ fun ImageScreen(
     }
 
     val context = LocalContext.current
-    val fileName = sharedViewModel.fileName.collectAsStateWithLifecycle().value
     val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
     val viewSize = sharedViewModel.size
 
-    LaunchedEffect(viewModel.ocrTextList) {
-        if (viewModel.ocrTextList == null) {
-            val imageSize = IntSize(image.width, image.height)
-            analyzeOCR(viewSize = viewSize, imageSize, fileName, context, viewModel::onTextRecognized)
+    LaunchedEffect(viewModel.isFinishedAnalysing) {
+        if (!viewModel.isFinishedAnalysing) {
+            analyzeImageOCR(viewSize = viewSize, image, viewModel::onTextRecognized)
         }
     }
 
     Surface(modifier = modifier.background(Color.Transparent)) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (viewModel.ocrTextList != null) {
-                if (viewModel.ocrTextList!!.isEmpty()) {
-                    Text("The image that you took does not contain text. This can happen when you press the capture button while moving too fast or the image is not focus enough and becomes blurry. Please go back to the previous page and take a picture again", modifier = Modifier.align(Alignment.Center))
+            if (viewModel.isFinishedAnalysing) {
+                if (viewModel.ocrTextList.isEmpty()) {
+                    val cachePath = imageCacheFile.absolutePath
+                    val cacheImage = BitmapFactory.decodeFile(cachePath)
+                    sharedViewModel.setImageInfo(cacheImage)
+                    viewModel.resetFinishedAnalysing()
                 }
                 else {
+                    val isFromHistory by sharedViewModel.isFromHistory.collectAsStateWithLifecycle()
+                    viewModel.saveImageToFile(isFromHistory, image, context.filesDir, dataStoreManager)
                     Image(
                         bitmap = image.asImageBitmap(),
                         contentDescription = "Image",
@@ -165,25 +157,8 @@ fun ImageScreen(
                                 indication = null,
                                 onClick = {})
                     )
-//                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
-//                        val box = viewModel.ocrTextSelected.rect
-//                        Canvas(modifier = Modifier.fillMaxSize()) {
-//                            val path = Path().apply {
-//                                addRect(
-//                                    rect = Rect(
-//                                        left = box.left,
-//                                        right = box.right,
-//                                        top = box.top,
-//                                        bottom = box.bottom
-//                                    )
-//                                )
-//                            }
-//                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-//                        }
-//                    }
-                    val test = viewModel.ocrTextList
-                    for (text in test!!) {
-                        val box = text.rect
+                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
+                        val box = viewModel.ocrTextSelected.rect
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             val path = Path().apply {
                                 addRect(
@@ -198,6 +173,23 @@ fun ImageScreen(
                             drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
                         }
                     }
+//                    val test = viewModel.ocrTextList
+//                    for (text in test) {
+//                        val box = text.rect
+//                        Canvas(modifier = Modifier.fillMaxSize()) {
+//                            val path = Path().apply {
+//                                addRect(
+//                                    rect = Rect(
+//                                        left = box.left,
+//                                        right = box.right,
+//                                        top = box.top,
+//                                        bottom = box.bottom
+//                                    )
+//                                )
+//                            }
+//                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+//                        }
+//                    }
                 }
             }
             else {

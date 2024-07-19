@@ -1,6 +1,6 @@
-import android.graphics.Bitmap
+package com.ocrtts.ui.screens
+
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ocrtts.history.DataStoreManager
-import com.ocrtts.ui.screens.Screens
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import java.io.File
 import java.text.SimpleDateFormat
@@ -51,7 +50,8 @@ fun HistoryScreen(
                         .fillMaxWidth()
                         .padding(8.dp)
                         .clickable {
-                            sharedViewModel.setImageInfo(file.absolutePath, bitmap)
+                            sharedViewModel.setImageInfo(bitmap)
+                            sharedViewModel.updateFromHistory(true)
                             navController.navigate(Screens.ImageScreen.route)
                         }
                 ) {
@@ -71,10 +71,4 @@ fun HistoryScreen(
             }
         }
     }
-}
-
-// Extension function to rotate a bitmap
-fun Bitmap.rotate(degrees: Float): Bitmap {
-    val matrix = Matrix().apply { postRotate(degrees) }
-    return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
 }
