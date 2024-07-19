@@ -1,5 +1,7 @@
 package com.ocrtts.ui.screens
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.Image
@@ -25,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -60,7 +63,23 @@ fun imageToBitmap(image: Image): Bitmap {
 }
 
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
-    return rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y
+    if (rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y) {
+        return true
+    }
+
+    if (rect.right - 25 <= x && rect.left + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y) {
+        return true
+    }
+
+    if (rect.right - 25 <= x && rect.left + 25 >= x && rect.bottom - 25 <= y && rect.top + 25 >= y) {
+        return true
+    }
+
+    if (rect.left - 25 <= x && rect.right + 25 >= x && rect.bottom - 25 <= y && rect.top + 25 >= y) {
+        return true
+    }
+
+    return false
 }
 
 @OptIn(ExperimentalGetImage::class)
@@ -95,7 +114,7 @@ fun ImageScreen(
                     for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
-                            Log.i("TextSelected", text.text)
+                            Log.i(TAG + "SelectedText", text.text)
                             hasText = true
                             break
                         }
@@ -126,8 +145,18 @@ fun ImageScreen(
     }
 
     val context = LocalContext.current
+    val activity = context as Activity
     val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
     val viewSize = sharedViewModel.size
+
+    activity.requestedOrientation = sharedViewModel.orientation
+
+    DisposableEffect(Unit) {
+        onDispose {
+            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
 
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {

@@ -1,7 +1,9 @@
 package com.ocrtts.ui.viewmodels
 
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntSize
@@ -20,9 +22,14 @@ class ImageSharedViewModel : ViewModel() {
     var size by mutableStateOf(IntSize.Zero)
         private set
 
+    var orientation by mutableIntStateOf(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+        private set
+
     fun setImageInfo(image: Bitmap) { _image.value = image }
 
     fun updateFromHistory(value: Boolean) { _isFromHistory.value = value}
 
     fun updateSize(value: IntSize) { size = value }
+
+    fun updateOrientation(value: Int) { orientation = value }
 }
