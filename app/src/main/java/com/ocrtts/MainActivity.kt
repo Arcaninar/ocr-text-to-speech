@@ -12,18 +12,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.ocrtts.ui.screens.MainScreen
-import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ocrtts.base.OfflineTextSynthesis
 import com.ocrtts.history.DataStoreManager
+import com.ocrtts.ui.screens.MainScreen
+import com.ocrtts.ui.theme.OCRTextToSpeechTheme
 import com.ocrtts.ui.viewmodels.SettingViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModelFactory
+import java.io.File
 import java.util.Locale
 
-
+// temporary variables, will be moved to better place/structure
 lateinit var notificationSound: MediaPlayer
+lateinit var imageCacheFile: File
 
 class MainActivity : ComponentActivity() {
 
@@ -39,16 +40,18 @@ class MainActivity : ComponentActivity() {
 
         val dataStoreManager = DataStoreManager(applicationContext)
         val factory = SettingViewModelFactory(dataStoreManager)
-        settingViewModel = ViewModelProvider(this, factory).get(SettingViewModel::class.java)
+        settingViewModel = ViewModelProvider(this, factory)[SettingViewModel::class.java]
+
+        val SDK_INT = Build.VERSION.SDK_INT
+        if (SDK_INT > 8) {
+            val policy = ThreadPolicy.Builder()
+                .permitAll().build()
+            StrictMode.setThreadPolicy(policy)
+        }
 
         setContent {
             notificationSound = MediaPlayer.create(LocalContext.current, R.raw.ding)
-            val SDK_INT = Build.VERSION.SDK_INT
-            if (SDK_INT > 8) {
-                val policy = ThreadPolicy.Builder()
-                    .permitAll().build()
-                StrictMode.setThreadPolicy(policy)
-            }
+            imageCacheFile = File(LocalContext.current.getExternalFilesDir(null), "image_cache.jpeg")
             OCRTextToSpeechTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

@@ -1,16 +1,9 @@
 package com.ocrtts.ui.screens
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.util.Log
-import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -31,10 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,43 +38,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.google.common.util.concurrent.ListenableFuture
 import com.ocrtts.notificationSound
 import com.ocrtts.ocr.CameraTextAnalyzer
-import com.ocrtts.history.DataStoreManager
-import com.ocrtts.type.OCRText
 import com.ocrtts.ui.viewmodels.CameraViewModel
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import rotate
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-
-
-private suspend fun Context.getCameraProvider(): ProcessCameraProvider =
-    suspendCoroutine { continuation ->
-        ProcessCameraProvider.getInstance(this).also { cameraProvider ->
-            cameraProvider.addListener({
-                continuation.resume(cameraProvider.run { get() })
-            }, ContextCompat.getMainExecutor(this))
-        }
-    }
 
 @Composable
 fun CameraScreen(
     navController: NavController,
     sharedViewModel: ImageSharedViewModel,
-    dataStoreManager: DataStoreManager,
     modifier: Modifier = Modifier,
     viewModel: CameraViewModel = viewModel()
 ) {
@@ -98,7 +70,7 @@ fun CameraScreen(
             .build()
             .also { analysis ->
                 val coroutineScope = CoroutineScope(Job() + Dispatchers.Main)
-                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), CameraTextAnalyzer(viewModel::updateRecognizedText, coroutineScope))
+                analysis.setAnalyzer(ContextCompat.getMainExecutor(context), CameraTextAnalyzer(sharedViewModel, viewModel::updateRecognizedText, coroutineScope))
             }
     }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -116,20 +88,16 @@ fun CameraScreen(
 
     }, ContextCompat.getMainExecutor(context))
 
-//    please don't remove this comment, might be important but not sure lol
-//    LaunchedEffect(lensFacing) {
-//        val cameraProvider = context.getCameraProvider()
-//        cameraProvider.unbindAll()
-//        val preview = Preview.Builder().build()
-//        preview.setSurfaceProvider(previewView.surfaceProvider)
-//        val viewPort = previewView.viewPort!!
-//        viewModel.updateViewPort(viewPort)
-//        val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
-//        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
-//    }
-    BackHandler {
-        activity?.finish() // 结束当前Activity
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraProviderFuture.get().unbindAll()
+        }
     }
+
+//    BackHandler {
+//        activity?.finish() // 结束当前Activity
+//    }
+
     Box(contentAlignment = Alignment.BottomEnd, modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = { previewView },
@@ -144,9 +112,7 @@ fun CameraScreen(
             imageCapture = imageCapture,
             navController = navController,
             viewModel = viewModel,
-            sharedViewModel = sharedViewModel,
-            dataStoreManager = dataStoreManager,
-            cameraProviderFuture = cameraProviderFuture
+            sharedViewModel = sharedViewModel
         )
     }
 }
@@ -157,8 +123,6 @@ fun NotifyUser(
     navController: NavController,
     viewModel: CameraViewModel,
     sharedViewModel: ImageSharedViewModel,
-    dataStoreManager: DataStoreManager,
-    cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
     modifier: Modifier = Modifier,
 ) {
     if (viewModel.isRecognizedText.collectAsStateWithLifecycle().value) {
@@ -177,6 +141,7 @@ fun NotifyUser(
             Text(
                 text = "There is a text in front of you. Click the button below to view it",
                 textAlign = TextAlign.Center,
+                color = Color.Black,
                 modifier = Modifier
                     .background(Color.White, RoundedCornerShape(50))
                     .padding(5.dp)
@@ -194,13 +159,11 @@ fun NotifyUser(
                         shape = CircleShape
                     )
                     .clickable {
-                        onClickButton(
+                        viewModel.captureImage(
                             imageCapture = imageCapture,
                             context = context,
-                            navController = navController,
                             sharedViewModel = sharedViewModel,
-                            dataStoreManager = dataStoreManager,
-                            cameraProviderFuture = cameraProviderFuture
+                            navController = navController
                         )
                     }
             ){
@@ -215,140 +178,9 @@ fun NotifyUser(
                     tint = Color.White
                 )
             }
-//            Button(
-//                onClick = {
-//                    onClickButton(
-//                        imageCapture = imageCapture,
-//                        context = context,
-//                        navController = navController,
-//                        sharedViewModel = sharedViewModel,
-//                        dataStoreManager = dataStoreManager,
-//                        cameraProviderFuture = cameraProviderFuture
-//                    )
-//
-//
-//                }) {
-//                CircleShape
-//            }
         }
     }
     else {
       viewModel.updateHasText(false)
-    }
-}
-
-fun onClickButton(
-    imageCapture: ImageCapture,
-    context: Context,
-    navController: NavController,
-    sharedViewModel: ImageSharedViewModel,
-    dataStoreManager: DataStoreManager,
-    cameraProviderFuture: ListenableFuture<ProcessCameraProvider>
-) {
-    val TAG = "ImageCapture"
-    val outputDirectory = context.filesDir
-    val photoFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
-
-    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-    imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(context),
-        object : ImageCapture.OnImageSavedCallback {
-            @SuppressLint("RestrictedApi")
-            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                val path = photoFile.absolutePath
-                Log.d(TAG, "Photo capture succeeded: $path")
-
-                CoroutineScope(Dispatchers.IO).launch {
-                    dataStoreManager.addImageToHistory(photoFile.absolutePath)
-                }
-
-                val exif = ExifInterface(path)
-                val rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED)
-
-                val rotationDegrees = when (rotation) {
-                    ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-                    ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-                    ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-                    else -> 0f
-                }
-
-                CoroutineScope(Dispatchers.Main).launch {
-                    lateinit var image: Bitmap
-                    if (rotationDegrees == 0f) {
-                        image = BitmapFactory.decodeFile(path)
-                    }
-                    else {
-                        image = BitmapFactory.decodeFile(path).rotate(rotationDegrees)
-                        val size = sharedViewModel.size
-                        image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-                        CoroutineScope(Dispatchers.IO).launch {
-                            val outputStream = FileOutputStream(photoFile)
-                            image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                            outputStream.close()
-                        }
-                    }
-                    sharedViewModel.setImageInfo(path, image)
-                }
-
-//                var image = BitmapFactory.decodeFile(path)
-//
-//                if (rotationDegrees != 0f) {
-//                    image = image.rotate(rotationDegrees)
-//                    val size = sharedViewModel.size
-//                    image = Bitmap.createScaledBitmap(image, size.width, size.height, true)
-//                    CoroutineScope(Dispatchers.IO).launch {
-//                        val outputStream = FileOutputStream(photoFile)
-//                        image.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-//                        outputStream.close()
-//                    }
-//                }
-//
-//                sharedViewModel.setImageInfo(path, image)
-                cameraProviderFuture.get().unbindAll()
-                navController.navigate(Screens.ImageScreen.route)
-            }
-
-            override fun onError(exception: ImageCaptureException) {
-                Log.e(TAG, "Photo capture failed: ${exception.message}")
-            }
-        }
-    )
-}
-
-@Composable
-fun OverlayTexts(OCRTexts: List<OCRText>, modifier: Modifier=Modifier) {
-    Box(modifier = modifier) {
-        OCRTexts.forEach { textRect ->
-            Box(
-                modifier = Modifier
-                    .offset(
-                        x = textRect.rect.left.dp,
-                        y = textRect.rect.top.dp
-                    )
-                    .size(
-                        width = (textRect.rect.right - textRect.rect.left).dp,
-                        height = (textRect.rect.bottom - textRect.rect.top).dp
-                    )
-                    .background(Color.Yellow.copy(alpha = 0.5f))
-//                    .clickable { /* Handle text selection */ }
-            ) {
-                Text(text = textRect.text, color = Color.White)
-            }
-        }
-    }
-}
-
-@Composable
-fun ControlButtons(modifier: Modifier=Modifier, onCapture: () -> Unit) {
-    Column(
-        modifier = modifier
-            .padding(16.dp)
-            .background(Color.Black.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Button(onClick = onCapture, shape = CircleShape) {
-            Text(text = "Capture")
-        }
     }
 }
