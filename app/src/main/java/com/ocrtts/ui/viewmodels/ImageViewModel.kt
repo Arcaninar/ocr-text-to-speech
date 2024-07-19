@@ -1,6 +1,7 @@
 package com.ocrtts.ui.viewmodels
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -30,13 +31,15 @@ class ImageViewModel : ViewModel() {
 
     private var hasSavedImage by mutableStateOf(false)
 
-    fun onTextRecognized(text: OCRText) {
-        if (text.text.isNotBlank()) {
-            ocrTextList.add(text)
+    fun onTextRecognized(text: OCRText, reset: Boolean) {
+        isFinishedAnalysing = true
+        if (reset) {
+            ocrTextList = mutableStateListOf()
         }
 
-        if (!isFinishedAnalysing) {
-            isFinishedAnalysing = true
+        if (text.text.isNotBlank()) {
+            Log.i("Text", text.text)
+            ocrTextList.add(text)
         }
     }
 

@@ -5,11 +5,9 @@ import android.util.Log
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
-import com.google.common.util.concurrent.ListenableFuture
 import com.ocrtts.type.OCRText
 import com.ocrtts.ui.screens.Screens
 import com.ocrtts.utils.modifyBitmap
@@ -24,7 +22,10 @@ class CameraViewModel : ViewModel() {
     private val _hasTextBefore = MutableStateFlow(false)
     val hasTextBefore = _hasTextBefore.asStateFlow()
 
-    fun updateRecognizedText(text: OCRText) {
+    fun updateRecognizedText(text: OCRText, isReset: Boolean) {
+        if (isReset) {
+            _isRecognizedText.value = false
+        }
         _isRecognizedText.value = text.text.isNotBlank()
     }
 
@@ -36,7 +37,6 @@ class CameraViewModel : ViewModel() {
         imageCapture: ImageCapture,
         context: Context,
         sharedViewModel: ImageSharedViewModel,
-        cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
         navController: NavController
     ) {
         val TAG = "ImageCapture"
@@ -49,7 +49,6 @@ class CameraViewModel : ViewModel() {
                     sharedViewModel.updateFromHistory(false)
                     super.onCaptureSuccess(image)
 
-                    cameraProviderFuture.get().unbindAll()
                     navController.navigate(Screens.ImageScreen.route)
                 }
 

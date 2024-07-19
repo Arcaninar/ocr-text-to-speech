@@ -1,5 +1,6 @@
 package com.ocrtts.ui.screens
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,9 +38,8 @@ fun MainScreen(settingViewModel: SettingViewModel) {
     //添加network选择器的地方
 
     // initialize OnlineOCR and OfflineOCR objects so when they analyze the text, the OCR is already initialized and save some time
-    LaunchedEffect(key1 = true) {
+    LaunchedEffect(LocalContext.current as Activity) {
         CoroutineScope(Dispatchers.Main).launch {
-            Log.i("InitializeOCR", "InitializeOCR")
             OnlineOCR
             OfflineOCR
         }

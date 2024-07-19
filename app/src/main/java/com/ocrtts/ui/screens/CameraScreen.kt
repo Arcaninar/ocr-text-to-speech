@@ -1,7 +1,6 @@
 package com.ocrtts.ui.screens
 
 import android.app.Activity
-import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -28,6 +27,7 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +42,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.google.common.util.concurrent.ListenableFuture
 import com.ocrtts.notificationSound
 import com.ocrtts.ocr.CameraTextAnalyzer
 import com.ocrtts.ui.viewmodels.CameraViewModel
@@ -89,9 +88,15 @@ fun CameraScreen(
 
     }, ContextCompat.getMainExecutor(context))
 
-    BackHandler {
-        activity?.finish() // 结束当前Activity
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraProviderFuture.get().unbindAll()
+        }
     }
+
+//    BackHandler {
+//        activity?.finish() // 结束当前Activity
+//    }
 
     Box(contentAlignment = Alignment.BottomEnd, modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -107,8 +112,7 @@ fun CameraScreen(
             imageCapture = imageCapture,
             navController = navController,
             viewModel = viewModel,
-            sharedViewModel = sharedViewModel,
-            cameraProviderFuture = cameraProviderFuture
+            sharedViewModel = sharedViewModel
         )
     }
 }
@@ -119,7 +123,6 @@ fun NotifyUser(
     navController: NavController,
     viewModel: CameraViewModel,
     sharedViewModel: ImageSharedViewModel,
-    cameraProviderFuture: ListenableFuture<ProcessCameraProvider>,
     modifier: Modifier = Modifier,
 ) {
     if (viewModel.isRecognizedText.collectAsStateWithLifecycle().value) {
@@ -160,7 +163,6 @@ fun NotifyUser(
                             imageCapture = imageCapture,
                             context = context,
                             sharedViewModel = sharedViewModel,
-                            cameraProviderFuture = cameraProviderFuture,
                             navController = navController
                         )
                     }

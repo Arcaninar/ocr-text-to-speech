@@ -16,7 +16,7 @@ private const val TAG = "CameraTextRecognitionAnalyzer"
 
 class CameraTextAnalyzer(
     private val viewModel: ImageSharedViewModel,
-    private val onTextRecognized: (OCRText) -> Unit,
+    private val onTextRecognized: (OCRText, Boolean) -> Unit,
     private val coroutineScope: CoroutineScope
 ) : ImageAnalysis.Analyzer {
     private var isLocked: Boolean = false

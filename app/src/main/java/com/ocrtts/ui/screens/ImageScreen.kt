@@ -88,7 +88,6 @@ fun ImageScreen(
             val TAG = "ImagePress"
             when (interaction) {
                 is PressInteraction.Press -> {
-                    Log.w(TAG + "test", "Pressed: ${interaction.pressPosition}")
                     val isLongClick = viewModel.longTouchCounter
 
                     val position = interaction.pressPosition
@@ -96,6 +95,7 @@ fun ImageScreen(
                     for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
+                            Log.i("TextSelected", text.text)
                             hasText = true
                             break
                         }
