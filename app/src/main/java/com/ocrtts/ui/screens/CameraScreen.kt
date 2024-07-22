@@ -1,10 +1,13 @@
 package com.ocrtts.ui.screens
 
 import android.app.Activity
+import android.view.MotionEvent
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.SurfaceOrientedMeteringPointFactory
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -33,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,6 +53,7 @@ import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun CameraScreen(
@@ -58,7 +63,6 @@ fun CameraScreen(
     viewModel: CameraViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val activity = LocalContext.current as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
     val lensFacing = CameraSelector.LENS_FACING_BACK
@@ -84,9 +88,30 @@ fun CameraScreen(
         preview.setSurfaceProvider(previewView.surfaceProvider)
         val viewPort = previewView.viewPort!!
         val useCaseGroup = UseCaseGroup.Builder().setViewPort(viewPort).addUseCase(preview).addUseCase(imageAnalysis).addUseCase(imageCapture).build()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
+        val camera = cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, useCaseGroup)
+        val cameraControl = camera.cameraControl
+
+        previewView.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                val factory = SurfaceOrientedMeteringPointFactory(previewView.width.toFloat(), previewView.height.toFloat())
+                val point = factory.createPoint(event.x, event.y)
+                val action = FocusMeteringAction.Builder(point)
+                    .setAutoCancelDuration(5, TimeUnit.SECONDS)
+                    .build()
+
+                cameraControl.startFocusAndMetering(action)
+            }
+
+            if (event.action == MotionEvent.ACTION_UP) {
+                previewView.performClick()
+            }
+
+            true
+        }
 
     }, ContextCompat.getMainExecutor(context))
+
+
 
     DisposableEffect(Unit) {
         onDispose {
@@ -149,6 +174,7 @@ fun NotifyUser(
             )
             Spacer(modifier = Modifier.padding(5.dp))
             val context = LocalContext.current
+            val config = LocalConfiguration.current
             Box(
                 contentAlignment= Alignment.Center,
                 modifier = Modifier
@@ -162,6 +188,7 @@ fun NotifyUser(
                         viewModel.captureImage(
                             imageCapture = imageCapture,
                             context = context,
+                            config = config,
                             sharedViewModel = sharedViewModel,
                             navController = navController
                         )
