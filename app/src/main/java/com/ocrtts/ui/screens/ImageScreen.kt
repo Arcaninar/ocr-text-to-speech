@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,10 +36,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -157,7 +162,6 @@ fun ImageScreen(
         }
     }
 
-
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
             analyzeImageOCR(viewSize = viewSize, image, viewModel::onTextRecognized)
@@ -231,7 +235,11 @@ fun ImageScreen(
                 )
             }
             IconButton(
-                onClick = { navController.navigate(Screens.CameraScreen.route) },
+                onClick = {
+                    navController.navigate(Screens.CameraScreen.route) {
+                        popUpTo(Screens.ImageScreen.route) { inclusive = true }
+                    }
+                },
                 modifier = Modifier
                     .size(75.dp)
                     .align(Alignment.TopStart)
@@ -241,21 +249,25 @@ fun ImageScreen(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "Back to video",
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(35.dp).background(Color.Black.copy(alpha = 0.3f), shape = CircleShape).padding(5.dp)
                 )
             }
             IconButton(
-                onClick = { navController.navigate(Screens.HistoryScreen.route) },
+                onClick = {
+                    navController.navigate(Screens.HistoryScreen.route) {
+                        popUpTo(Screens.ImageScreen.route) { inclusive = true }
+                    }
+                },
                 modifier = Modifier
                     .size(75.dp)
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.history),
+                    imageVector = Icons.Rounded.History,
                     contentDescription = "History Icon",
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(35.dp).background(Color.Black.copy(alpha = 0.3f), shape = CircleShape).padding(5.dp)
                 )
             }
         }
