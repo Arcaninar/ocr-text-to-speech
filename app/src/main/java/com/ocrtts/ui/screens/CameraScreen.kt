@@ -1,10 +1,6 @@
 package com.ocrtts.ui.screens
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.util.Log
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
@@ -48,7 +44,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
