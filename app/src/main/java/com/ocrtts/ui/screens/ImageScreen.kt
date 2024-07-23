@@ -12,6 +12,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +39,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -53,7 +57,6 @@ import com.ocrtts.ui.viewmodels.ImageViewModel
 import com.ocrtts.ui.viewmodels.TTSViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-
 
 fun imageToBitmap(image: Image): Bitmap {
     val buffer = image.planes[0].buffer
@@ -92,11 +95,12 @@ fun ImageScreen(
     viewModel: ImageViewModel = viewModel(),
     ttsViewModel: TTSViewModel = viewModel()
 ) {
-    //offline tts try
-//    val context = LocalContext.current
-//    val offlineTTS = OfflineTextSynthesis(context)
-//    var azureTTS = remember { AzureTextSynthesis("en-GB-SoniaNeural") }
     val interactionSource = remember { MutableInteractionSource() }
+
+    val zoom = remember { mutableStateOf(1f) }
+    val offsetX = remember { mutableStateOf(0f) }
+    val offsetY = remember { mutableStateOf(0f) }
+    val angle = remember { mutableStateOf(0f) }
 
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collectLatest { interaction ->
@@ -124,15 +128,11 @@ fun ImageScreen(
                         viewModel.updateTextRectSelected(OCRText())
                     }
 
-                    delay(3000L)
+                    delay(500L)
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
                         ttsViewModel.speak(viewModel.ocrTextSelected.text, 1.0f)
-//                        azureTTS.stopSynthesis()
-//                        sAP(viewModel.ocrTextSelected.text, 1.0f, offlineTTS)
-//                        synthesizeAndPlayText(viewModel.ocrTextSelected.text, "en-US", 1.0f, AzureTextSynthesis("en-GB-SoniaNeural"))
-
                     }
                 }
 
@@ -157,7 +157,6 @@ fun ImageScreen(
         }
     }
 
-
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
             analyzeImageOCR(viewSize = viewSize, image, viewModel::onTextRecognized)
@@ -170,25 +169,46 @@ fun ImageScreen(
                 if (viewModel.ocrTextList.isEmpty()) {
                     val cachePath = imageCacheFile.absolutePath
                     val cacheImage = BitmapFactory.decodeFile(cachePath)
-                    sharedViewModel.setImageInfo(cacheImage)
+                    sharedViewModel.setImageInfo(cachePath, cacheImage)
                     viewModel.resetFinishedAnalysing()
-                }
-                else {
+                } else {
                     val isFromHistory by sharedViewModel.isFromHistory.collectAsStateWithLifecycle()
                     viewModel.saveImageToFile(isFromHistory, image, context.filesDir, dataStoreManager)
+
                     Image(
                         bitmap = image.asImageBitmap(),
                         contentDescription = "Image",
                         modifier = Modifier
                             .fillMaxSize()
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                onClick = {})
+                            .graphicsLayer(
+                                scaleX = zoom.value,
+                                scaleY = zoom.value,
+                                rotationZ = angle.value,
+                                translationX = offsetX.value,
+                                translationY = offsetY.value
+                            )
+                            .pointerInput(Unit) {
+                                detectTransformGestures { _, pan, gestureZoom, _ ->
+                                    zoom.value *= gestureZoom
+                                    offsetX.value += pan.x
+                                    offsetY.value += pan.y
+                                }
+                            }
+                            .clickable(interactionSource = interactionSource, indication = null) {}
                     )
-                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
-                        val box = viewModel.ocrTextSelected.rect
-                        Canvas(modifier = Modifier.fillMaxSize()) {
+
+                    val test = viewModel.ocrTextList
+                    for (text in test) {
+                        val box = text.rect
+                        Canvas(modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = zoom.value,
+                                scaleY = zoom.value,
+                                translationX = offsetX.value,
+                                translationY = offsetY.value
+                            )
+                        ) {
                             val path = Path().apply {
                                 addRect(
                                     rect = Rect(
@@ -202,26 +222,33 @@ fun ImageScreen(
                             drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
                         }
                     }
-//                    val test = viewModel.ocrTextList
-//                    for (text in test) {
-//                        val box = text.rect
-//                        Canvas(modifier = Modifier.fillMaxSize()) {
-//                            val path = Path().apply {
-//                                addRect(
-//                                    rect = Rect(
-//                                        left = box.left,
-//                                        right = box.right,
-//                                        top = box.top,
-//                                        bottom = box.bottom
-//                                    )
-//                                )
-//                            }
-//                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-//                        }
-//                    }
+
+                    if (viewModel.ocrTextSelected.text.isNotBlank()) {
+                        val box = viewModel.ocrTextSelected.rect
+                        Canvas(modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = zoom.value,
+                                scaleY = zoom.value,
+                                translationX = offsetX.value,
+                                translationY = offsetY.value
+                            )
+                        ) {
+                            val path = Path().apply {
+                                addRect(
+                                    rect = Rect(
+                                        left = box.left,
+                                        right = box.right,
+                                        top = box.top,
+                                        bottom = box.bottom
+                                    )
+                                )
+                            }
+                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+                        }
+                    }
                 }
-            }
-            else {
+            } else {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .width(64.dp)
@@ -261,3 +288,7 @@ fun ImageScreen(
         }
     }
 }
+
+
+
+

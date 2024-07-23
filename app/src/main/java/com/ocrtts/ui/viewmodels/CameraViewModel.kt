@@ -48,7 +48,7 @@ class CameraViewModel : ViewModel() {
             object : ImageCapture.OnImageCapturedCallback() {
                 override fun onCaptureSuccess(image: ImageProxy) {
                     val finalBitmap = modifyBitmap(image.toBitmap(), image.imageInfo.rotationDegrees, sharedViewModel.size)
-                    sharedViewModel.setImageInfo(finalBitmap)
+                    sharedViewModel.setImageInfo(null.toString(),finalBitmap)
                     sharedViewModel.updateFromHistory(false)
                     Log.i("orientation", config.orientation.toString())
                     if (config.orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
