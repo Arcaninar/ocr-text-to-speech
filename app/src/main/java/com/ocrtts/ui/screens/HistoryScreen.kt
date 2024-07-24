@@ -1,3 +1,5 @@
+package com.ocrtts.ui.screens
+
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -7,22 +9,40 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ocrtts.history.DataStoreManager
-import com.ocrtts.ui.screens.Screens
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -140,12 +160,16 @@ fun HistoryScreen(
                                                         selectedImages = selectedImages + file
                                                     }
                                                 } else {
-                                                    val orientation = when (file.name[0]) {
-                                                        'L' -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                                                        'R' -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                                                    val fileNames = file.name.split("_")
+                                                    val orientation = when (fileNames[0]) {
+                                                        "L" -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                                                        "R" -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
                                                         else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                                                     }
+                                                    val viewSizes = fileNames[1].split("x")
+                                                    val viewSize = IntSize(viewSizes[0].toInt(), viewSizes[1].toInt())
                                                     sharedViewModel.updateImageInfo(BitmapFactory.decodeFile(file.absolutePath), true, orientation)
+                                                    sharedViewModel.updateSize(viewSize)
                                                     navController.navigate(Screens.ImageScreen.route)
                                                 }
                                             }

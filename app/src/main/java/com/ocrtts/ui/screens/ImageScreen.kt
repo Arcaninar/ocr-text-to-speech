@@ -33,7 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,10 +101,10 @@ fun ImageScreen(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
 
-    val zoom = remember { mutableStateOf(1f) }
-    val offsetX = remember { mutableStateOf(0f) }
-    val offsetY = remember { mutableStateOf(0f) }
-    val angle = remember { mutableStateOf(0f) }
+    val zoom = remember { mutableFloatStateOf(1f) }
+    val offsetX = remember { mutableFloatStateOf(0f) }
+    val offsetY = remember { mutableFloatStateOf(0f) }
+    val angle = remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(interactionSource) {
         val TAG = "ImagePress"
@@ -166,7 +166,7 @@ fun ImageScreen(
 
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
-            analyzeImageOCR(viewSize = viewSize, image, viewModel::onTextRecognized)
+            analyzeImageOCR(viewSize, image, viewModel::onTextRecognized)
         }
     }
 
@@ -180,12 +180,8 @@ fun ImageScreen(
                     viewModel.resetFinishedAnalysing()
                 } else {
                     val isFromHistory by sharedViewModel.isFromHistory.collectAsStateWithLifecycle()
-                    val orientationChar = when (orientation) {
-                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> 'L'
-                        ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE -> 'R'
-                        else -> 'P'
-                    }
-                    viewModel.saveImageToFile(isFromHistory, image, orientationChar, context.filesDir, dataStoreManager)
+
+                    viewModel.saveImageToFile(isFromHistory, image, orientation, viewSize, context.filesDir, dataStoreManager)
 
                     Image(
                         bitmap = image.asImageBitmap(),
@@ -193,17 +189,17 @@ fun ImageScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer(
-                                scaleX = zoom.value,
-                                scaleY = zoom.value,
-                                rotationZ = angle.value,
-                                translationX = offsetX.value,
-                                translationY = offsetY.value
+                                scaleX = zoom.floatValue,
+                                scaleY = zoom.floatValue,
+                                rotationZ = angle.floatValue,
+                                translationX = offsetX.floatValue,
+                                translationY = offsetY.floatValue
                             )
                             .pointerInput(Unit) {
                                 detectTransformGestures { _, pan, gestureZoom, _ ->
-                                    zoom.value *= gestureZoom
-                                    offsetX.value += pan.x
-                                    offsetY.value += pan.y
+                                    zoom.floatValue *= gestureZoom
+                                    offsetX.floatValue += pan.x
+                                    offsetY.floatValue += pan.y
                                 }
                             }
                             .clickable(interactionSource = interactionSource, indication = null) {}
@@ -241,10 +237,10 @@ fun ImageScreen(
                         Canvas(modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer(
-                                scaleX = zoom.value,
-                                scaleY = zoom.value,
-                                translationX = offsetX.value,
-                                translationY = offsetY.value
+                                scaleX = zoom.floatValue,
+                                scaleY = zoom.floatValue,
+                                translationX = offsetX.floatValue,
+                                translationY = offsetY.floatValue
                             )
                         ) {
                             val path = Path().apply {
