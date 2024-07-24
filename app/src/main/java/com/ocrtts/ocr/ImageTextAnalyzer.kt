@@ -70,11 +70,14 @@ suspend fun analyzeImageOCR(viewSize: IntSize, image: Bitmap, onTextRecognized: 
     val scaleFactor = getScaleFactor(viewSize, IntSize(image.width, image.height))
 
     // do online analysis if internet is online, otherwise offline
+    val TAG = "AnalyzeImageOCR"
     val hasInternet = true
     if (hasInternet) {
+        Log.i(TAG, "Analyzing image using OnlineOCR")
         OnlineOCR.analyzeOCR(image, false, scaleFactor, onTextRecognized, false)
     }
     else {
+        Log.i(TAG, "Analyzing image using OfflineOCR")
         val inputImage = InputImage.fromBitmap(image, 0)
         OfflineOCR.analyzeOCR(inputImage, false, scaleFactor, onTextRecognized, false)
     }
@@ -133,25 +136,25 @@ object OnlineOCR {
         }
 
         try {
-            Log.i(TAG, "running onlineOCR")
             val annotateRequest = vision.images().annotate(batchRequest)
             annotateRequest.disableGZipContent = true
-            withContext(Dispatchers.IO) {
-                val responses = annotateRequest.execute()
-                val response = responses.responses.firstOrNull()
-                val text = response?.fullTextAnnotation?.text ?: ""
-                if (text.isNotBlank()) {
-                    hasText = true
-                }
 
-                if (onlyDetect) {
-                    onTextRecognized(OCRText(text), isReset)
-                } else {
-                    convertToOCRText(response, scaleFactor, onTextRecognized, isReset)
-                }
+            val responses = annotateRequest.execute()
+            val response = responses.responses.firstOrNull()
+            val text = response?.fullTextAnnotation?.text ?: ""
+            if (text.isNotBlank()) {
+                hasText = true
             }
+
+            if (onlyDetect) {
+                onTextRecognized(OCRText(text), isReset)
+            } else {
+                convertToOCRText(response, scaleFactor, onTextRecognized, isReset)
+            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error processing image for online text recognition: ${e.message}")
+            Log.i(TAG, "Processing image using OfflineOCR now")
             val inputImage = InputImage.fromBitmap(bitmap, 0)
             return OfflineOCR.analyzeOCR(inputImage, onlyDetect, scaleFactor, onTextRecognized, true)
         }
@@ -171,28 +174,26 @@ object OnlineOCR {
                 return
             }
 
-            withContext(Dispatchers.Main) {
-                for (block in fullText.blocks) {
-                    for (paragraph in block.paragraphs) {
-                        val rect =
-                            Rect(
-                                top = (paragraph.boundingBox.vertices[0]?.y ?: 0) * heightScaleFactor,
-                                bottom = (paragraph.boundingBox.vertices[2]?.y ?: 0) * heightScaleFactor,
-                                left = (paragraph.boundingBox.vertices[0]?.x ?: 0) * widthScaleFactor,
-                                right = (paragraph.boundingBox.vertices[2]?.x ?: 0) * widthScaleFactor,
-                            )
+            for (block in fullText.blocks) {
+                for (paragraph in block.paragraphs) {
+                    val rect =
+                        Rect(
+                            top = (paragraph.boundingBox.vertices[0]?.y ?: 0) * heightScaleFactor,
+                            bottom = (paragraph.boundingBox.vertices[2]?.y ?: 0) * heightScaleFactor,
+                            left = (paragraph.boundingBox.vertices[0]?.x ?: 0) * widthScaleFactor,
+                            right = (paragraph.boundingBox.vertices[2]?.x ?: 0) * widthScaleFactor,
+                        )
 
-                        var paragraphText = ""
+                    var paragraphText = ""
 
-                        for (word in paragraph.words) {
-                            for (symbol in word.symbols) {
-                                paragraphText += symbol.text
-                            }
-                            paragraphText += " "
+                    for (word in paragraph.words) {
+                        for (symbol in word.symbols) {
+                            paragraphText += symbol.text
                         }
-
-                        onTextRecognized(OCRText(paragraphText.removeSpecialCharacters(), rect), isReset)
+                        paragraphText += " "
                     }
+
+                    onTextRecognized(OCRText(paragraphText.removeSpecialCharacters(), rect), isReset)
                 }
             }
         }
@@ -208,7 +209,6 @@ object OfflineOCR {
 
     suspend fun analyzeOCR(image: InputImage, onlyDetect: Boolean, scaleFactor: Pair<Float, Float> = Pair(0f, 0f), onTextRecognized: (OCRText, Boolean) -> Unit, isReset: Boolean): Boolean {
         var hasText = false
-        Log.i(TAG, "running offlineOCR")
         suspendCoroutine { continuation ->
             textRecognizer.process(image)
                 .addOnSuccessListener { visionText ->
@@ -228,6 +228,7 @@ object OfflineOCR {
                 .addOnFailureListener { e ->
                     continuation.resume(Unit)
                     Log.e(TAG, "Error processing image for offline text recognition: ${e.message}")
+                    Log.i(TAG, "Retry processing image using OfflineOCR")
                     if (!isReset) {
                         CoroutineScope(Dispatchers.Main).launch {
                             hasText = analyzeOCR(image, onlyDetect, scaleFactor, onTextRecognized, true)

@@ -47,7 +47,7 @@ fun MainScreen(settingViewModel: SettingViewModel) {
     }
 
     val cameraPermissionState: PermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
-    Log.i(TAG,cameraPermissionState.status.isGranted.toString())
+    Log.i(TAG, cameraPermissionState.status.isGranted.toString())
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
     val navController = rememberNavController()

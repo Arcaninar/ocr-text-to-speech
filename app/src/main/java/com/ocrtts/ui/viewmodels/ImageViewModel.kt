@@ -33,26 +33,30 @@ class ImageViewModel : ViewModel() {
     private var hasSavedImage by mutableStateOf(false)
 
     fun onTextRecognized(text: OCRText, reset: Boolean) {
-        isFinishedAnalysing = true
-        if (reset) {
+        if (reset && !isFinishedAnalysing) {
             ocrTextList = mutableStateListOf()
         }
+        isFinishedAnalysing = true
+
 
         if (text.text.isNotBlank()) {
-            Log.i(TAG + "RecognizedText", text.text)
+            Log.i(TAG, text.text)
             ocrTextList.add(text)
         }
     }
 
-    fun resetFinishedAnalysing() { isFinishedAnalysing = false }
+    fun resetFinishedAnalysing() {
+        isFinishedAnalysing = false
+        ocrTextList = mutableStateListOf()
+    }
 
     fun updateTextRectSelected(value: OCRText) { ocrTextSelected = value }
 
     fun incrementLongTouch() { longTouchCounter += 1 }
 
-    fun saveImageToFile(isFromHistory: Boolean, image: Bitmap, outputDirectory: File, dataStoreManager: DataStoreManager) {
+    fun saveImageToFile(isFromHistory: Boolean, image: Bitmap, orientation: Char, outputDirectory: File, dataStoreManager: DataStoreManager) {
         if (!hasSavedImage && !isFromHistory) {
-            val photoFile = File(outputDirectory, "${System.currentTimeMillis()}.jpg")
+            val photoFile = File(outputDirectory, "${orientation}_${System.currentTimeMillis()}.jpg")
             saveBitmapToFile(photoFile, image)
 
             CoroutineScope(Dispatchers.IO).launch {

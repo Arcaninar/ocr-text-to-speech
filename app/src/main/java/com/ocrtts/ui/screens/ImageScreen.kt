@@ -67,19 +67,22 @@ fun imageToBitmap(image: Image): Bitmap {
 }
 
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
-    if (rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y) {
+//    Log.i("Rect", "rect: " + rect.left + " " + rect.right + " " + rect.top + " " + rect.bottom)
+//    Log.i("Rect", "tap: " + x.toInt() + " " + y.toInt())
+    val offset = 10
+    if (rect.left - offset <= x && rect.right + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
     }
 
-    if (rect.right - 25 <= x && rect.left + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y) {
+    if (rect.right - offset <= x && rect.left + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
     }
 
-    if (rect.right - 25 <= x && rect.left + 25 >= x && rect.bottom - 25 <= y && rect.top + 25 >= y) {
+    if (rect.right - offset <= x && rect.left + offset >= x && rect.bottom - offset <= y && rect.top + offset >= y) {
         return true
     }
 
-    if (rect.left - 25 <= x && rect.right + 25 >= x && rect.bottom - 25 <= y && rect.top + 25 >= y) {
+    if (rect.left - offset <= x && rect.right + offset >= x && rect.bottom - offset <= y && rect.top + offset >= y) {
         return true
     }
 
@@ -104,12 +107,15 @@ fun ImageScreen(
     val angle = remember { mutableStateOf(0f) }
 
     LaunchedEffect(interactionSource) {
+        val TAG = "ImagePress"
         interactionSource.interactions.collectLatest { interaction ->
+            Log.i(TAG, "pressed")
             if (!viewModel.isFinishedAnalysing || viewModel.ocrTextList.isEmpty()) {
+                Log.i(TAG, "returned")
                 return@collectLatest
             }
 
-            val TAG = "ImagePress"
+
             when (interaction) {
                 is PressInteraction.Press -> {
                     val isLongClick = viewModel.longTouchCounter
@@ -119,7 +125,7 @@ fun ImageScreen(
                     for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
-                            Log.i(TAG + "SelectedText", text.text)
+                            Log.i(TAG, "SelectedText: " + text.text)
                             hasText = true
                             break
                         }
@@ -139,7 +145,6 @@ fun ImageScreen(
 
                 is PressInteraction.Release -> {
                     viewModel.incrementLongTouch()
-                    Log.w(TAG, "Release press: ${viewModel.longTouchCounter}")
                 }
             }
         }
@@ -149,8 +154,8 @@ fun ImageScreen(
     val activity = context as Activity
     val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
     val viewSize = sharedViewModel.size
-
-    activity.requestedOrientation = sharedViewModel.orientation
+    val orientation = sharedViewModel.orientation.collectAsStateWithLifecycle().value
+    activity.requestedOrientation = orientation
 
     DisposableEffect(Unit) {
         onDispose {
@@ -171,11 +176,16 @@ fun ImageScreen(
                 if (viewModel.ocrTextList.isEmpty()) {
                     val cachePath = imageCacheFile.absolutePath
                     val cacheImage = BitmapFactory.decodeFile(cachePath)
-                    sharedViewModel.setImageInfo(cachePath, cacheImage)
+                    sharedViewModel.updateImage(cacheImage)
                     viewModel.resetFinishedAnalysing()
                 } else {
                     val isFromHistory by sharedViewModel.isFromHistory.collectAsStateWithLifecycle()
-                    viewModel.saveImageToFile(isFromHistory, image, context.filesDir, dataStoreManager)
+                    val orientationChar = when (orientation) {
+                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> 'L'
+                        ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE -> 'R'
+                        else -> 'P'
+                    }
+                    viewModel.saveImageToFile(isFromHistory, image, orientationChar, context.filesDir, dataStoreManager)
 
                     Image(
                         bitmap = image.asImageBitmap(),
@@ -276,7 +286,10 @@ fun ImageScreen(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "Back to video",
                     tint = Color.White,
-                    modifier = Modifier.size(35.dp).background(Color.Black.copy(alpha = 0.3f), shape = CircleShape).padding(5.dp)
+                    modifier = Modifier
+                        .size(35.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), shape = CircleShape)
+                        .padding(5.dp)
                 )
             }
             IconButton(
@@ -294,7 +307,10 @@ fun ImageScreen(
                     imageVector = Icons.Rounded.History,
                     contentDescription = "History Icon",
                     tint = Color.White,
-                    modifier = Modifier.size(35.dp).background(Color.Black.copy(alpha = 0.3f), shape = CircleShape).padding(5.dp)
+                    modifier = Modifier
+                        .size(35.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), shape = CircleShape)
+                        .padding(5.dp)
                 )
             }
         }

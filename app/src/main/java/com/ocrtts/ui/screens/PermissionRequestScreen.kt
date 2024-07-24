@@ -33,6 +33,9 @@ import com.google.accompanist.permissions.shouldShowRationale
 import com.ocrtts.ui.viewmodels.MAX_DENY_COUNT
 import com.ocrtts.ui.viewmodels.PermissionViewModel
 import com.ocrtts.ui.viewmodels.PermissionViewModelFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 //TODO
 //LaunchedEffect for Compose event
@@ -62,9 +65,9 @@ fun PermissionRequestScreen(
 
     LaunchedEffect(viewModel.denyCount) {
         Log.i(TAG,"launched effect denyCount: " + viewModel.denyCount)
-        if (viewModel.denyCount > MAX_DENY_COUNT) {
+        if (viewModel.denyCount >= MAX_DENY_COUNT) {
             alert = "Camera permission required for this feature to be available. Please grant the permission in Settings manually."
-            btnText = "Go to Settings"
+            btnText = " Go to Settings"
             btnAction = {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", context.packageName, null)
@@ -74,7 +77,7 @@ fun PermissionRequestScreen(
         }
         else{
             alert = "The camera is important for this app. Please grant the permission."
-            btnText= "Request permission"
+            btnText= " Request permission"
             btnAction = {
                 cameraPermissionState.launchPermissionRequest()
                 viewModel.incrementDenyCount()
@@ -92,9 +95,11 @@ fun PermissionRequestScreen(
     LaunchedEffect(cameraPermissionState.status.isGranted) {
         Log.i(TAG, "launched effect cameraPermissionState.status")
         if (cameraPermissionState.status.isGranted) {
-            viewModel.resetDenyCount()
-            navController.navigate(Screens.MainCameraScreen.route) {
+            navController.navigate(Screens.HomeScreen.route) {
                 popUpTo(Screens.PermissionRequestScreen.route) { inclusive = true }
+            }
+            CoroutineScope(Dispatchers.Main).launch {
+                viewModel.resetDenyCount()
             }
         }
     }
