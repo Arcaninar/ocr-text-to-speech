@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.*
@@ -68,45 +69,64 @@ fun HistoryScreen(
                 Text(
                     text = "Selected ${selectedImages.size} images",
                     color = Color.White,
-                    style = MaterialTheme.typography.subtitle1
+                    style = MaterialTheme.typography.subtitle2
                 )
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            selectedImages.forEach { file ->
-                                file.delete()
+                Row {
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                selectedImages.forEach { file ->
+                                    file.delete()
+                                }
+                                selectedImages = emptySet()
+                                dataStoreManager.updateImageHistory()
+                                isSelectionMode = false
                             }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+
+                    ) {
+                        Text("Delete")
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                        onClick = {
                             selectedImages = emptySet()
-                            dataStoreManager.updateImageHistory()
                             isSelectionMode = false
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color.White,
-                        contentColor = Color.Black
-                    ),
-                    modifier = Modifier.size(100.dp, 48.dp) // Adjust the size as needed
-                ) {
-                    Text("Delete")
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+
+                    ) {
+                        Text("Cancel")
+                    }
                 }
             }
         }
 
-        groupedByDate.forEach { (date, files) ->
-            Text(
-                text = date,
-                style = MaterialTheme.typography.subtitle1,
-                color = Color.White,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(4),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            groupedByDate.forEach { (date, files) ->
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = date,
+                        style = MaterialTheme.typography.subtitle1,
+                        color = Color.White,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
                 items(files) { file ->
                     if (file.exists()) {
                         var bitmap by remember { mutableStateOf<Bitmap?>(null) }

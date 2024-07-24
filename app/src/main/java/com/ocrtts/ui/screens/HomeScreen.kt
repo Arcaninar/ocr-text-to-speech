@@ -104,7 +104,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 painter = painterResource(id = R.drawable.ic_debug),
                 contentDescription = "TTSTestingScreen",
                 tint = Color.White,
-                modifier = Modifier.size(30.dp))
+                modifier = Modifier.size(50.dp))
         }
 
         IconButton(
@@ -117,7 +117,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 painter = painterResource(id = R.drawable.ic_settings),
                 contentDescription = "SettingScreen",
                 tint = Color.Yellow,
-                modifier = Modifier.size(30.dp))
+                modifier = Modifier.size(25.dp))
         }
     }
 }
