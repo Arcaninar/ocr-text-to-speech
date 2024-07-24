@@ -1,5 +1,6 @@
 package com.ocrtts.ui.viewmodels
 
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -7,6 +8,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.type.OCRText
@@ -54,9 +56,15 @@ class ImageViewModel : ViewModel() {
 
     fun incrementLongTouch() { longTouchCounter += 1 }
 
-    fun saveImageToFile(isFromHistory: Boolean, image: Bitmap, orientation: Char, outputDirectory: File, dataStoreManager: DataStoreManager) {
+    fun saveImageToFile(isFromHistory: Boolean, image: Bitmap, orientation: Int, viewSize: IntSize, outputDirectory: File, dataStoreManager: DataStoreManager) {
         if (!hasSavedImage && !isFromHistory) {
-            val photoFile = File(outputDirectory, "${orientation}_${System.currentTimeMillis()}.jpg")
+            val orientationChar = when (orientation) {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> 'L'
+                ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE -> 'R'
+                else -> 'P'
+            }
+            val size = "${viewSize.width}x${viewSize.height}"
+            val photoFile = File(outputDirectory, "${orientationChar}_${size}_${System.currentTimeMillis()}.jpg")
             saveBitmapToFile(photoFile, image)
 
             CoroutineScope(Dispatchers.IO).launch {

@@ -178,7 +178,6 @@ fun NotifyUser(
             )
             Spacer(modifier = Modifier.padding(5.dp))
             val context = LocalContext.current
-            val config = LocalConfiguration.current
             Box(
                 contentAlignment= Alignment.Center,
                 modifier = Modifier

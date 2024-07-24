@@ -139,17 +139,19 @@ object OnlineOCR {
             val annotateRequest = vision.images().annotate(batchRequest)
             annotateRequest.disableGZipContent = true
 
-            val responses = annotateRequest.execute()
-            val response = responses.responses.firstOrNull()
-            val text = response?.fullTextAnnotation?.text ?: ""
-            if (text.isNotBlank()) {
-                hasText = true
-            }
+            CoroutineScope(Dispatchers.IO).launch {
+                val responses = annotateRequest.execute()
+                val response = responses.responses.firstOrNull()
+                val text = response?.fullTextAnnotation?.text ?: ""
+                if (text.isNotBlank()) {
+                    hasText = true
+                }
 
-            if (onlyDetect) {
-                onTextRecognized(OCRText(text), isReset)
-            } else {
-                convertToOCRText(response, scaleFactor, onTextRecognized, isReset)
+                if (onlyDetect) {
+                    onTextRecognized(OCRText(text), isReset)
+                } else {
+                    convertToOCRText(response, scaleFactor, onTextRecognized, isReset)
+                }
             }
 
         } catch (e: Exception) {
@@ -162,7 +164,7 @@ object OnlineOCR {
         return hasText
     }
 
-    private suspend fun convertToOCRText(response: AnnotateImageResponse?, scaleFactor: Pair<Float, Float>, onTextRecognized: (OCRText, Boolean) -> Unit, isReset: Boolean) {
+    private fun convertToOCRText(response: AnnotateImageResponse?, scaleFactor: Pair<Float, Float>, onTextRecognized: (OCRText, Boolean) -> Unit, isReset: Boolean) {
         try {
             val widthScaleFactor = scaleFactor.first
             val heightScaleFactor = scaleFactor.second
@@ -176,24 +178,26 @@ object OnlineOCR {
 
             for (block in fullText.blocks) {
                 for (paragraph in block.paragraphs) {
-                    val rect =
-                        Rect(
-                            top = (paragraph.boundingBox.vertices[0]?.y ?: 0) * heightScaleFactor,
-                            bottom = (paragraph.boundingBox.vertices[2]?.y ?: 0) * heightScaleFactor,
-                            left = (paragraph.boundingBox.vertices[0]?.x ?: 0) * widthScaleFactor,
-                            right = (paragraph.boundingBox.vertices[2]?.x ?: 0) * widthScaleFactor,
-                        )
+                    CoroutineScope(Dispatchers.Main).launch {
+                        val rect =
+                            Rect(
+                                top = (paragraph.boundingBox.vertices[0]?.y ?: 0) * heightScaleFactor,
+                                bottom = (paragraph.boundingBox.vertices[2]?.y ?: 0) * heightScaleFactor,
+                                left = (paragraph.boundingBox.vertices[0]?.x ?: 0) * widthScaleFactor,
+                                right = (paragraph.boundingBox.vertices[2]?.x ?: 0) * widthScaleFactor,
+                            )
 
-                    var paragraphText = ""
+                        var paragraphText = ""
 
-                    for (word in paragraph.words) {
-                        for (symbol in word.symbols) {
-                            paragraphText += symbol.text
+                        for (word in paragraph.words) {
+                            for (symbol in word.symbols) {
+                                paragraphText += symbol.text
+                            }
+                            paragraphText += " "
                         }
-                        paragraphText += " "
-                    }
 
-                    onTextRecognized(OCRText(paragraphText.removeSpecialCharacters(), rect), isReset)
+                        onTextRecognized(OCRText(paragraphText.removeSpecialCharacters(), rect), isReset)
+                    }
                 }
             }
         }
@@ -265,7 +269,7 @@ object OfflineOCR {
 }
 
 private fun String.removeSpecialCharacters(): String {
-    val pattern = Regex("[^A-Za-z0-9\\p{script=Han} .,:;()\"'!?\\-+=\$%&<>*#@]")
+    val pattern = Regex("[^A-Za-z0-9\\p{script=Han} .,:;()\"'?\\-+=\$%&<>*#@]")
 
     return this.replace(pattern, "")
 }
