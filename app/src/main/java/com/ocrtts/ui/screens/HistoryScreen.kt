@@ -1,3 +1,4 @@
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
@@ -139,7 +140,12 @@ fun HistoryScreen(
                                                         selectedImages = selectedImages + file
                                                     }
                                                 } else {
-                                                    sharedViewModel.setImageInfo(file.absolutePath, BitmapFactory.decodeFile(file.absolutePath))
+                                                    val orientation = when (file.name[0]) {
+                                                        'L' -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                                                        'R' -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                                                        else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                                    }
+                                                    sharedViewModel.updateImageInfo(BitmapFactory.decodeFile(file.absolutePath), true, orientation)
                                                     navController.navigate(Screens.ImageScreen.route)
                                                 }
                                             }

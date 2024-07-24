@@ -1,9 +1,11 @@
 package com.ocrtts.ui.viewmodels
 
+import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
-import android.content.res.Configuration
+import android.os.Build
 import android.util.Log
+import android.view.Surface
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -38,7 +40,6 @@ class CameraViewModel : ViewModel() {
     fun captureImage(
         imageCapture: ImageCapture,
         context: Context,
-        config: Configuration,
         sharedViewModel: ImageSharedViewModel,
         navController: NavController
     ) {
@@ -48,15 +49,25 @@ class CameraViewModel : ViewModel() {
             object : ImageCapture.OnImageCapturedCallback() {
                 override fun onCaptureSuccess(image: ImageProxy) {
                     val finalBitmap = modifyBitmap(image.toBitmap(), image.imageInfo.rotationDegrees, sharedViewModel.size)
-                    sharedViewModel.setImageInfo(null.toString(),finalBitmap)
-                    sharedViewModel.updateFromHistory(false)
-                    Log.i("orientation", config.orientation.toString())
-                    if (config.orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
-                        sharedViewModel.updateOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
+                    val activity = context as Activity
+                    val rotation: Int
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val display = activity.display
+                        rotation = display?.rotation ?: Surface.ROTATION_0
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val display = activity.windowManager.defaultDisplay
+                        rotation = display.rotation
                     }
-                    else {
-                        sharedViewModel.updateOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
+
+                    val orientation = when(rotation) {
+                        Surface.ROTATION_90 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE // Landscape left
+                        Surface.ROTATION_270 -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE // Landscape right
+                        else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                     }
+
+                    sharedViewModel.updateImageInfo(finalBitmap, false, orientation)
                     super.onCaptureSuccess(image)
 
                     navController.navigate(Screens.ImageScreen.route)

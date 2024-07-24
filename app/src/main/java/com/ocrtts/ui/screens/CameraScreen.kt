@@ -1,7 +1,9 @@
 package com.ocrtts.ui.screens
 
-import android.app.Activity
+import android.annotation.SuppressLint
+import android.util.Log
 import android.view.MotionEvent
+import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
@@ -55,6 +57,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import java.util.concurrent.TimeUnit
 
+@SuppressLint("ComposeViewModelInjection")
 @Composable
 fun CameraScreen(
     navController: NavController,
@@ -93,6 +96,7 @@ fun CameraScreen(
 
         previewView.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_DOWN) {
+                Log.i("orientation", "cameraOrientation: " + camera.cameraInfo.sensorRotationDegrees)
                 val factory = SurfaceOrientedMeteringPointFactory(previewView.width.toFloat(), previewView.height.toFloat())
                 val point = factory.createPoint(event.x, event.y)
                 val action = FocusMeteringAction.Builder(point)
@@ -111,17 +115,17 @@ fun CameraScreen(
 
     }, ContextCompat.getMainExecutor(context))
 
-
-
     DisposableEffect(Unit) {
         onDispose {
             cameraProviderFuture.get().unbindAll()
         }
     }
 
-//    BackHandler {
-//        activity?.finish() // 结束当前Activity
-//    }
+    BackHandler {
+        navController.navigate(Screens.HomeScreen.route) {
+            popUpTo(Screens.MainCameraScreen.route) { inclusive = true }
+        }
+    }
 
     Box(contentAlignment = Alignment.BottomEnd, modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -188,7 +192,6 @@ fun NotifyUser(
                         viewModel.captureImage(
                             imageCapture = imageCapture,
                             context = context,
-                            config = config,
                             sharedViewModel = sharedViewModel,
                             navController = navController
                         )

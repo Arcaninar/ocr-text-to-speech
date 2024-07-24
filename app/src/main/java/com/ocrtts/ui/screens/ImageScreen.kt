@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,12 +44,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.ocrtts.R
 import com.ocrtts.history.DataStoreManager
 import com.ocrtts.imageCacheFile
 import com.ocrtts.ocr.analyzeImageOCR
@@ -58,6 +58,7 @@ import com.ocrtts.ui.viewmodels.TTSViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
+
 fun imageToBitmap(image: Image): Bitmap {
     val buffer = image.planes[0].buffer
     val bytes = ByteArray(buffer.capacity())
@@ -66,19 +67,22 @@ fun imageToBitmap(image: Image): Bitmap {
 }
 
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
-    if (rect.left - 25 <= x && rect.right + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y) {
+//    Log.i("Rect", "rect: " + rect.left + " " + rect.right + " " + rect.top + " " + rect.bottom)
+//    Log.i("Rect", "tap: " + x.toInt() + " " + y.toInt())
+    val offset = 10
+    if (rect.left - offset <= x && rect.right + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
     }
 
-    if (rect.right - 25 <= x && rect.left + 25 >= x && rect.top - 25 <= y && rect.bottom + 25 >= y) {
+    if (rect.right - offset <= x && rect.left + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
     }
 
-    if (rect.right - 25 <= x && rect.left + 25 >= x && rect.bottom - 25 <= y && rect.top + 25 >= y) {
+    if (rect.right - offset <= x && rect.left + offset >= x && rect.bottom - offset <= y && rect.top + offset >= y) {
         return true
     }
 
-    if (rect.left - 25 <= x && rect.right + 25 >= x && rect.bottom - 25 <= y && rect.top + 25 >= y) {
+    if (rect.left - offset <= x && rect.right + offset >= x && rect.bottom - offset <= y && rect.top + offset >= y) {
         return true
     }
 
@@ -103,12 +107,15 @@ fun ImageScreen(
     val angle = remember { mutableStateOf(0f) }
 
     LaunchedEffect(interactionSource) {
+        val TAG = "ImagePress"
         interactionSource.interactions.collectLatest { interaction ->
+            Log.i(TAG, "pressed")
             if (!viewModel.isFinishedAnalysing || viewModel.ocrTextList.isEmpty()) {
+                Log.i(TAG, "returned")
                 return@collectLatest
             }
 
-            val TAG = "ImagePress"
+
             when (interaction) {
                 is PressInteraction.Press -> {
                     val isLongClick = viewModel.longTouchCounter
@@ -118,7 +125,7 @@ fun ImageScreen(
                     for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
-                            Log.i(TAG + "SelectedText", text.text)
+                            Log.i(TAG, "SelectedText: " + text.text)
                             hasText = true
                             break
                         }
@@ -138,7 +145,6 @@ fun ImageScreen(
 
                 is PressInteraction.Release -> {
                     viewModel.incrementLongTouch()
-                    Log.w(TAG, "Release press: ${viewModel.longTouchCounter}")
                 }
             }
         }
@@ -148,14 +154,15 @@ fun ImageScreen(
     val activity = context as Activity
     val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
     val viewSize = sharedViewModel.size
-
-    activity.requestedOrientation = sharedViewModel.orientation
+    val orientation = sharedViewModel.orientation.collectAsStateWithLifecycle().value
+    activity.requestedOrientation = orientation
 
     DisposableEffect(Unit) {
         onDispose {
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
+
 
     LaunchedEffect(viewModel.isFinishedAnalysing) {
         if (!viewModel.isFinishedAnalysing) {
@@ -169,11 +176,16 @@ fun ImageScreen(
                 if (viewModel.ocrTextList.isEmpty()) {
                     val cachePath = imageCacheFile.absolutePath
                     val cacheImage = BitmapFactory.decodeFile(cachePath)
-                    sharedViewModel.setImageInfo(cachePath, cacheImage)
+                    sharedViewModel.updateImage(cacheImage)
                     viewModel.resetFinishedAnalysing()
                 } else {
                     val isFromHistory by sharedViewModel.isFromHistory.collectAsStateWithLifecycle()
-                    viewModel.saveImageToFile(isFromHistory, image, context.filesDir, dataStoreManager)
+                    val orientationChar = when (orientation) {
+                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> 'L'
+                        ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE -> 'R'
+                        else -> 'P'
+                    }
+                    viewModel.saveImageToFile(isFromHistory, image, orientationChar, context.filesDir, dataStoreManager)
 
                     Image(
                         bitmap = image.asImageBitmap(),
@@ -197,31 +209,32 @@ fun ImageScreen(
                             .clickable(interactionSource = interactionSource, indication = null) {}
                     )
 
-                    val test = viewModel.ocrTextList
-                    for (text in test) {
-                        val box = text.rect
-                        Canvas(modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer(
-                                scaleX = zoom.value,
-                                scaleY = zoom.value,
-                                translationX = offsetX.value,
-                                translationY = offsetY.value
-                            )
-                        ) {
-                            val path = Path().apply {
-                                addRect(
-                                    rect = Rect(
-                                        left = box.left,
-                                        right = box.right,
-                                        top = box.top,
-                                        bottom = box.bottom
-                                    )
-                                )
-                            }
-                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
-                        }
-                    }
+                    // INFO: this code is for testing purpose only, please comment it when pushing to github
+//                    val test = viewModel.ocrTextList
+//                    for (text in test) {
+//                        val box = text.rect
+//                        Canvas(modifier = Modifier
+//                            .fillMaxSize()
+//                            .graphicsLayer(
+//                                scaleX = zoom.value,
+//                                scaleY = zoom.value,
+//                                translationX = offsetX.value,
+//                                translationY = offsetY.value
+//                            )
+//                        ) {
+//                            val path = Path().apply {
+//                                addRect(
+//                                    rect = Rect(
+//                                        left = box.left,
+//                                        right = box.right,
+//                                        top = box.top,
+//                                        bottom = box.bottom
+//                                    )
+//                                )
+//                            }
+//                            drawPath(path, color = Color.Yellow.copy(alpha = 0.5f))
+//                        }
+//                    }
 
                     if (viewModel.ocrTextSelected.text.isNotBlank()) {
                         val box = viewModel.ocrTextSelected.rect
@@ -248,7 +261,8 @@ fun ImageScreen(
                         }
                     }
                 }
-            } else {
+            }
+            else {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .width(64.dp)
@@ -258,7 +272,11 @@ fun ImageScreen(
                 )
             }
             IconButton(
-                onClick = { navController.navigate(Screens.CameraScreen.route) },
+                onClick = {
+                    navController.navigate(Screens.CameraScreen.route) {
+                        popUpTo(Screens.ImageScreen.route) { inclusive = true }
+                    }
+                },
                 modifier = Modifier
                     .size(75.dp)
                     .align(Alignment.TopStart)
@@ -268,27 +286,33 @@ fun ImageScreen(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                     contentDescription = "Back to video",
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier
+                        .size(35.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), shape = CircleShape)
+                        .padding(5.dp)
                 )
             }
             IconButton(
-                onClick = { navController.navigate(Screens.HistoryScreen.route) },
+                onClick = {
+                    navController.navigate(Screens.HistoryScreen.route) {
+                        popUpTo(Screens.ImageScreen.route) { inclusive = true }
+                    }
+                },
                 modifier = Modifier
                     .size(75.dp)
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.history),
+                    imageVector = Icons.Rounded.History,
                     contentDescription = "History Icon",
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier
+                        .size(35.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), shape = CircleShape)
+                        .padding(5.dp)
                 )
             }
         }
     }
 }
-
-
-
-
