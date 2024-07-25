@@ -3,13 +3,13 @@ package com.ocrtts.ui.viewmodels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ocrtts.history.DataStoreManager
+import com.ocrtts.history.SettingDataStoreManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class SettingViewModel(private val dataStoreManager: DataStoreManager) : ViewModel() {
+class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : ViewModel() {
 
     private val _langModel = MutableStateFlow("")
     val langModel: StateFlow<String> = _langModel
@@ -30,6 +30,7 @@ class SettingViewModel(private val dataStoreManager: DataStoreManager) : ViewMod
         viewModelScope.launch {
             dataStoreManager.speedRateFlow.collectLatest {
                 _speedRate.value = it
+//                speedSetting = it
                 Log.i("set", "speedRate: $_speedRate")
             }
         }
@@ -42,20 +43,26 @@ class SettingViewModel(private val dataStoreManager: DataStoreManager) : ViewMod
     }
 
     fun updateLangModel(newLangModel: String) {
+        _langModel.value = newLangModel
         viewModelScope.launch {
             dataStoreManager.updateLangModel(newLangModel)
+            Log.i("update", newLangModel)
         }
     }
 
     fun updateSpeedRate(newSpeedRate: Float) {
+        _speedRate.value = newSpeedRate
         viewModelScope.launch {
             dataStoreManager.updateSpeedRate(newSpeedRate)
+            Log.i("update", newSpeedRate.toString())
         }
     }
 
     fun updateModelType(newModelType: String) {
+        _modelType.value = newModelType
         viewModelScope.launch {
             dataStoreManager.updateModelType(newModelType)
+            Log.i("update", newModelType)
         }
     }
 }

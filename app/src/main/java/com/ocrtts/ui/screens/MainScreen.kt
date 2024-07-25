@@ -1,9 +1,11 @@
 package com.ocrtts.ui.screens
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
@@ -23,6 +25,7 @@ import com.ocrtts.ocr.OfflineOCR
 import com.ocrtts.ocr.OnlineOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModel
+import com.ocrtts.ui.viewmodels.TTSViewModelFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,6 +33,7 @@ import kotlinx.coroutines.launch
 //TODO
 //Suggest Pass the whole navhost to each screen, but not a navigate function
 private const val TAG="MainScreen"
+
 
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -71,7 +75,13 @@ fun MainScreen(settingViewModel: SettingViewModel) {
             }
             composable(Screens.ImageScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
-                ImageScreen(sharedViewModel = sharedViewModel, navController = navController, dataStoreManager = dataStoreManager)
+                ImageScreen(
+                    sharedViewModel = sharedViewModel,
+                    navController = navController,
+                    dataStoreManager = dataStoreManager,
+                    settingViewModel = settingViewModel, // Pass settingViewModel
+                    ttsViewModel = viewModel(factory = TTSViewModelFactory(LocalContext.current, settingViewModel.langModel.collectAsState().value, settingViewModel.speedRate.collectAsState().value)) // Pass TTSViewModel with initial values
+                )
             }
             composable(Screens.HistoryScreen.route) {
                 val sharedViewModel = it.sharedViewModel<ImageSharedViewModel>(navController)
@@ -92,4 +102,3 @@ inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(
     }
     return viewModel(parentEntry)
 }
-

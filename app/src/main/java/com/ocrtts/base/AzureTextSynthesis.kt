@@ -1,24 +1,24 @@
 package com.ocrtts.base
 
+//Azure SDK
+//import okio.AsyncTimeout.Companion.condition
+//import okio.AsyncTimeout.Companion.lock
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
-//Azure SDK
 import com.microsoft.cognitiveservices.speech.Connection
 import com.microsoft.cognitiveservices.speech.PropertyId
 import com.microsoft.cognitiveservices.speech.SpeechConfig
 import com.microsoft.cognitiveservices.speech.SpeechSynthesisCancellationDetails
 import com.microsoft.cognitiveservices.speech.SpeechSynthesisOutputFormat
 import com.microsoft.cognitiveservices.speech.SpeechSynthesizer
-//import okio.AsyncTimeout.Companion.condition
-//import okio.AsyncTimeout.Companion.lock
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.concurrent.withLock
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.Condition
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class AzureTextSynthesis(voice: String) {
 
@@ -116,7 +116,7 @@ class AzureTextSynthesis(voice: String) {
 
         } catch (ex: Exception) {
             Log.e("check", "unexpected in onCreate() ${ex.message}")
-            assert(false)
+//            assert(false)
         }
     }
 
@@ -124,43 +124,13 @@ class AzureTextSynthesis(voice: String) {
         val text = inputText ?: "Empty!"
         ttsThread.submit(SynthesisRunnable(synthesizer!!, audioTrack, lock, condition, stopState, isPaused, text, speed))
     }
-    //1
-//    fun pauseSynthesis() {
-//        synchronized(synchronizedLock) {
-//            isPaused.set(true)
-//            audioTrack.pause()
-//        }
-//    }
-//2
-//    fun pauseSynthesis() {
-//        lock.withLock {
-//            isPaused.set(true)
-//            audioTrack.pause()
-//            try {
-//                condition.await() // This can throw InterruptedException
-//            } catch (e: InterruptedException) {
-//                // Handle the interruption, maybe log it or re-interrupt the thread
-//                Thread.currentThread().interrupt() // Preserve interrupt status
-//            }
-//        }
-//    }
-//3
+
     fun pauseSynthesis() {
         lock.withLock {
             isPaused.set(true)
             audioTrack.pause()
         }
     }
-
-
-
-//    fun resumeSynthesis() {
-//        synchronized(synchronizedLock) {
-//            isPaused.set(false)
-//            synchronizedLock.notifyAll()
-//            audioTrack.play()
-//        }
-//    }
 
     fun resumeSynthesis() {
         lock.withLock {
@@ -175,10 +145,8 @@ class AzureTextSynthesis(voice: String) {
         lock.withLock {
             stopState = true
         }
-//        synchronized(synchronizedLock) {
-//            stopState = true
-//        }
-        audioTrack.pause()
+//        audioTrack.pause()
+        audioTrack.stop()
         audioTrack.flush()
     }
 
