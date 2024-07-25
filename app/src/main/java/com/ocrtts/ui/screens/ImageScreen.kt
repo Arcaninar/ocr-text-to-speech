@@ -341,6 +341,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -415,7 +416,7 @@ fun ImageScreen(
 
     val speed by settingViewModel.speedRate.collectAsState()
 //    val language by settingViewModel.langModel.collectAsState()
-    val showDialog by imageViewModel.showDialog
+    var showDialog by imageViewModel.showDialog
 
     // sentinel
     DisposableEffect(Unit) {
@@ -598,7 +599,7 @@ fun ImageScreen(
                     }
                 },
                 dismissButton = {
-                    Button(onClick = { /* dismiss the dialog */ }) {
+                    Button(onClick = { showDialog = false }) {
                         Text("No")
                     }
                 }

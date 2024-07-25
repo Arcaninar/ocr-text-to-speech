@@ -123,7 +123,7 @@ fun LanguageSelection(
     onLanguageSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val languages = listOf("en-US", "zh-HK", "zh-TW")
+    val languages = listOf("zh-HK-HiuMaanNeural", "zh-TW-HsiaoChenNeural", "en-GB-SoniaNeural")
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Text(text = "Choose a language model: $selectedLanguage", fontSize = 20.sp)

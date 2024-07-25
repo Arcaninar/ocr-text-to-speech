@@ -45,7 +45,7 @@ class ImageViewModel(application: Application, private val settingViewModel: Set
     val isOnline: StateFlow<Boolean> = _isOnline
     //change1
 //    val isNetworkAvailable = MutableStateFlow(false)
-    val showDialog = mutableStateOf(false)
+    var showDialog = mutableStateOf(false)
 
 
     val modelType: StateFlow<String> = settingViewModel.modelType.stateIn(

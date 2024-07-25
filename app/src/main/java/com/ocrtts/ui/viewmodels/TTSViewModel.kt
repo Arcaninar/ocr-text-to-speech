@@ -36,7 +36,7 @@ class TTSViewModel(
     fun updateLanguage(newLanguage: String) {
         initialLanguage = newLanguage
         if (isOnline) {
-            azureTTS?.updateVoice(newLanguage) // 假设存在这样的一个方法
+            azureTTS?.updateVoice(newLanguage)
         } else {
             offlineTTS.setLanguage(Locale.forLanguageTag(newLanguage))
         }

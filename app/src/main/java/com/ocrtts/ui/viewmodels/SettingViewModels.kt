@@ -46,6 +46,7 @@ class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : 
         _langModel.value = newLangModel
         viewModelScope.launch {
             dataStoreManager.updateLangModel(newLangModel)
+            Log.i("update", newLangModel)
         }
     }
 
