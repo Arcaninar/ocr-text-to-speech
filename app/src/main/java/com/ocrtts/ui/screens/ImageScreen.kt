@@ -78,6 +78,8 @@ fun imageToBitmap(image: Image): Bitmap {
 }
 
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
+//    Log.i("ContainsFunction", "rect: " + rect.left + " " + rect.right + " " + rect.top + " " + rect.bottom)
+//    Log.i("ContainsFunction", "tap: " + x.toInt() + " " + y.toInt())
     val offset = 10
     if (rect.left - offset <= x && rect.right + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
@@ -143,9 +145,7 @@ fun ImageScreen(
     LaunchedEffect(interactionSource) {
         val TAG = "ImagePress"
         interactionSource.interactions.collectLatest { interaction ->
-            Log.i(TAG, "pressed")
             if (!viewModel.isFinishedAnalysing || viewModel.ocrTextList.isEmpty()) {
-                Log.i(TAG, "returned")
                 return@collectLatest
             }
 
@@ -159,7 +159,7 @@ fun ImageScreen(
                     for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
-                            Log.i(TAG, "SelectedText: " + text.text)
+                            Log.i(TAG, "Selected Text: " + text.text)
                             hasText = true
                             break
                         }
@@ -171,7 +171,6 @@ fun ImageScreen(
 
                     delay(500L)
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
-                        Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
                         ttsViewModel.speak(viewModel.ocrTextSelected.text, 1.0f)
                     }

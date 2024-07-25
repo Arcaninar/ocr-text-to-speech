@@ -108,7 +108,6 @@ class ImageViewModel(application: Application, private val settingViewModel: Set
 
 
         if (text.text.isNotBlank()) {
-            Log.i(TAG, text.text)
             ocrTextList.add(text)
         }
     }

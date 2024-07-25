@@ -20,7 +20,7 @@ class SettingDataStoreManager(private val context: Context) {
 
     val langModelFlow: Flow<String> = context.settingsDataStore.data
         .map { preferences ->
-            preferences[LANG_MODEL_KEY] ?: "en-US"
+            preferences[LANG_MODEL_KEY] ?: "en-GB-SoniaNeural"
         }
 
     val speedRateFlow: Flow<Float> = context.settingsDataStore.data

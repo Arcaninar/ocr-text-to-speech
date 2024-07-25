@@ -36,7 +36,6 @@ fun SettingScreen(
     settingViewModel: SettingViewModel,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val selectedLanguage by settingViewModel.langModel.collectAsState()

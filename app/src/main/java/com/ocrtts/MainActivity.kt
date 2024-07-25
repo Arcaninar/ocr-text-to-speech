@@ -37,8 +37,6 @@ import kotlinx.coroutines.launch
 // temporary variables, will be moved to better place/structure
 lateinit var notificationSound: MediaPlayer
 lateinit var imageCacheFile: File
-//lateinit var speedSetting: Float
-
 
 class MainActivity : ComponentActivity() {
 
