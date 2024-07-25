@@ -71,7 +71,7 @@ suspend fun analyzeImageOCR(viewSize: IntSize, image: Bitmap, onTextRecognized: 
 
     // do online analysis if internet is online, otherwise offline
     val TAG = "AnalyzeImageOCR"
-    val hasInternet = true
+    val hasInternet = false
     if (hasInternet) {
         Log.i(TAG, "Analyzing image using OnlineOCR")
         OnlineOCR.analyzeOCR(image, false, scaleFactor, onTextRecognized, false)

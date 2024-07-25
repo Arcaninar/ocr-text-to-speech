@@ -42,6 +42,7 @@ fun SettingScreen(
     val selectedLanguage by settingViewModel.langModel.collectAsState()
     val speed by settingViewModel.speedRate.collectAsState()
     val selectedModel by settingViewModel.modelType.collectAsState()
+
     var showLanguageSelection by remember { mutableStateOf(selectedModel == "onlineTTS") }
 
     LaunchedEffect(settingViewModel) {
@@ -86,6 +87,7 @@ fun SettingScreen(
         ExampleText(speed = speed, modifier = Modifier)
         Spacer(modifier = Modifier.height(16.dp))
         SaveButton(onClick = {
+
             navController.navigate(Screens.HomeScreen.route)
         }, modifier = Modifier)
     }
@@ -121,7 +123,7 @@ fun LanguageSelection(
     onLanguageSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val languages = listOf("en-US", "zh-HK", "zh-TW")
+    val languages = listOf("zh-HK-HiuMaanNeural", "zh-TW-HsiaoChenNeural", "en-GB-SoniaNeural")
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Text(text = "Choose a language model: $selectedLanguage", fontSize = 20.sp)

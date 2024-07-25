@@ -1,6 +1,7 @@
 package com.ocrtts.ui.screens
 
 import android.app.Activity
+import android.app.Application
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -21,6 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Button
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PhotoCamera
@@ -32,9 +36,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -44,7 +50,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -55,10 +64,11 @@ import com.ocrtts.type.OCRText
 import com.ocrtts.ui.components.CustomIconButton
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
+import com.ocrtts.ui.viewmodels.ImageViewModelFactory
+import com.ocrtts.ui.viewmodels.SettingViewModel
 import com.ocrtts.ui.viewmodels.TTSViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-
 
 fun imageToBitmap(image: Image): Bitmap {
     val buffer = image.planes[0].buffer
@@ -68,8 +78,6 @@ fun imageToBitmap(image: Image): Bitmap {
 }
 
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
-//    Log.i("Rect", "rect: " + rect.left + " " + rect.right + " " + rect.top + " " + rect.bottom)
-//    Log.i("Rect", "tap: " + x.toInt() + " " + y.toInt())
     val offset = 10
     if (rect.left - offset <= x && rect.right + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
@@ -96,16 +104,41 @@ fun ImageScreen(
     sharedViewModel: ImageSharedViewModel,
     navController: NavController,
     dataStoreManager: DataStoreManager,
+    settingViewModel: SettingViewModel,
+    ttsViewModel: TTSViewModel,
     modifier: Modifier = Modifier,
-    viewModel: ImageViewModel = viewModel(),
-    ttsViewModel: TTSViewModel = viewModel()
+    viewModel: ImageViewModel = viewModel(
+        factory = ImageViewModelFactory(LocalContext.current.applicationContext as Application, settingViewModel)
+    )
 ) {
+    val context = LocalContext.current
     val interactionSource = remember { MutableInteractionSource() }
 
     val zoom = remember { mutableFloatStateOf(1f) }
     val offsetX = remember { mutableFloatStateOf(0f) }
     val offsetY = remember { mutableFloatStateOf(0f) }
     val angle = remember { mutableFloatStateOf(0f) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+
+    val speed by settingViewModel.speedRate.collectAsState()
+//    val language by settingViewModel.langModel.collectAsState()
+    var showDialog by viewModel.showDialog
+
+    // sentinel
+    DisposableEffect(Unit) {
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                ttsViewModel.stopAllTTS()
+            }
+        }
+        lifecycle.addObserver(lifecycleObserver)
+
+        onDispose {
+            lifecycle.removeObserver(lifecycleObserver)
+        }
+    }
+
+
 
     LaunchedEffect(interactionSource) {
         val TAG = "ImagePress"
@@ -151,7 +184,6 @@ fun ImageScreen(
         }
     }
 
-    val context = LocalContext.current
     val activity = context as Activity
     val image = sharedViewModel.image.collectAsStateWithLifecycle().value!!
     val viewSize = sharedViewModel.size
@@ -258,8 +290,7 @@ fun ImageScreen(
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .width(64.dp)
@@ -287,6 +318,25 @@ fun ImageScreen(
                     popUpTo(Screens.ImageScreen.route) { inclusive = true }
                 }
             }
+        }
+
+        //Alert box
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("Network Available") },
+                text = { Text("Network connection detected. Please manually switch to online Text to Speech") },
+                confirmButton = {
+                    Button(onClick = { navController.navigate(Screens.SettingScreen.route) }) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    Button(onClick = { showDialog = false }) {
+                        Text("No")
+                    }
+                }
+            )
         }
     }
 }
