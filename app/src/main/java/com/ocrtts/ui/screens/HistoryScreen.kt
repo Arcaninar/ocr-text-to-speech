@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -73,6 +73,12 @@ fun HistoryScreen(
     var selectedImages by remember { mutableStateOf(setOf<File>()) }
     var isSelectionMode by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+
+    BackHandler {
+        navController.navigate(Screens.CameraScreen.route) {
+            popUpTo(Screens.HistoryScreen.route) { inclusive = true }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -189,8 +195,15 @@ fun HistoryScreen(
                                                         else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                                                     }
                                                     val viewSizes = fileNames[1].split("x")
-                                                    val viewSize = IntSize(viewSizes[0].toInt(), viewSizes[1].toInt())
-                                                    sharedViewModel.updateImageInfo(BitmapFactory.decodeFile(file.absolutePath), true, orientation)
+                                                    val viewSize = IntSize(
+                                                        viewSizes[0].toInt(),
+                                                        viewSizes[1].toInt()
+                                                    )
+                                                    sharedViewModel.updateImageInfo(
+                                                        BitmapFactory.decodeFile(
+                                                            file.absolutePath
+                                                        ), true, orientation
+                                                    )
                                                     sharedViewModel.updateSize(viewSize)
                                                     navController.navigate(Screens.ImageScreen.route)
                                                 }

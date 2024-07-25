@@ -3,8 +3,13 @@ package com.ocrtts.ui.screens
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.PestControl
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -22,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.ocrtts.R
+import com.ocrtts.ui.components.CustomIconButton
 
 @Composable
 fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
@@ -33,7 +39,6 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-
     ) {
         Image(
             painter = painterResource(id = R.drawable.t001),
@@ -78,46 +83,40 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
             )
 
         }
-        IconButton(
-            onClick = {
-                navController.navigate(Screens.HistoryScreen.route)
-            },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
+        CustomIconButton(
+            icon = Icons.Rounded.Settings,
+            description = "Go to Settings",
+            modifier = Modifier.align(Alignment.TopStart),
+            innerPadding = 5.dp
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.history), // 使用你的历史图标资源ID
-                contentDescription = "History Icon",
-                tint = Color.White, // 设置图标颜色
-                modifier = Modifier.size(30.dp)
-            )
+            navController.navigate(Screens.SettingScreen.route)
+        }
+        CustomIconButton(
+            icon = Icons.Rounded.History,
+            description = "Go to History",
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            navController.navigate(Screens.HistoryScreen.route)
+        }
+        CustomIconButton(
+            icon = Icons.Rounded.PestControl,
+            description = "Debugging",
+            modifier = Modifier.align(Alignment.BottomEnd)
+        ) {
+            navController.navigate(Screens.TTSTestingScreen.route)
         }
 
-        IconButton(
-            onClick = { navController.navigate(Screens.TTSTestingScreen.route) },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_debug),
-                contentDescription = "TTSTestingScreen",
-                tint = Color.White,
-                modifier = Modifier.size(50.dp))
-        }
-
-        IconButton(
-            onClick = { navController.navigate(Screens.SettingScreen.route) },
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_settings),
-                contentDescription = "SettingScreen",
-                tint = Color.Yellow,
-                modifier = Modifier.size(25.dp))
-        }
+//        IconButton(
+//            onClick = { navController.navigate(Screens.TTSTestingScreen.route) },
+//            modifier = Modifier
+//                .align(Alignment.BottomEnd)
+//                .padding(16.dp)
+//        ) {
+//            Icon(
+//                painter = painterResource(id = R.drawable.ic_debug),
+//                contentDescription = "TTSTestingScreen",
+//                tint = Color.White,
+//                modifier = Modifier.size(50.dp))
+//        }
     }
 }
