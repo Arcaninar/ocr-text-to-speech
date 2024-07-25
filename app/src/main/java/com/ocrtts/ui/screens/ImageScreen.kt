@@ -18,10 +18,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.Text
@@ -29,8 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -61,6 +56,7 @@ import com.ocrtts.history.DataStoreManager
 import com.ocrtts.imageCacheFile
 import com.ocrtts.ocr.analyzeImageOCR
 import com.ocrtts.type.OCRText
+import com.ocrtts.ui.components.CustomIconButton
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModelFactory
@@ -77,6 +73,8 @@ fun imageToBitmap(image: Image): Bitmap {
 }
 
 fun contains(rect: Rect, x: Float, y: Float): Boolean {
+//    Log.i("ContainsFunction", "rect: " + rect.left + " " + rect.right + " " + rect.top + " " + rect.bottom)
+//    Log.i("ContainsFunction", "tap: " + x.toInt() + " " + y.toInt())
     val offset = 10
     if (rect.left - offset <= x && rect.right + offset >= x && rect.top - offset <= y && rect.bottom + offset >= y) {
         return true
@@ -142,9 +140,7 @@ fun ImageScreen(
     LaunchedEffect(interactionSource) {
         val TAG = "ImagePress"
         interactionSource.interactions.collectLatest { interaction ->
-            Log.i(TAG, "pressed")
             if (!viewModel.isFinishedAnalysing || viewModel.ocrTextList.isEmpty()) {
-                Log.i(TAG, "returned")
                 return@collectLatest
             }
 
@@ -158,7 +154,7 @@ fun ImageScreen(
                     for (text in viewModel.ocrTextList) {
                         if (contains(text.rect, position.x, position.y)) {
                             viewModel.updateTextRectSelected(text)
-                            Log.i(TAG, "SelectedText: " + text.text)
+                            Log.i(TAG, "Selected Text: " + text.text)
                             hasText = true
                             break
                         }
@@ -170,7 +166,6 @@ fun ImageScreen(
 
                     delay(500L)
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
-                        Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
                         ttsViewModel.speak(viewModel.ocrTextSelected.text, 1.0f)
                     }
@@ -298,47 +293,24 @@ fun ImageScreen(
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             }
-            IconButton(
-                onClick = {
-                    navController.navigate(Screens.CameraScreen.route) {
-                        popUpTo(Screens.ImageScreen.route) { inclusive = true }
-                    }
-                },
-                modifier = Modifier
-                    .size(75.dp)
-                    .align(Alignment.TopStart)
-                    .padding(8.dp)
+            CustomIconButton(
+                icon = Icons.Rounded.PhotoCamera,
+                description = "Back to video",
+                modifier = Modifier.align(Alignment.TopStart),
+                innerPadding = 5.dp
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.PhotoCamera,
-                    contentDescription = "Back to video",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(35.dp)
-                        .background(Color.Black.copy(alpha = 0.3f), shape = CircleShape)
-                        .padding(5.dp)
-                )
+                navController.navigate(Screens.CameraScreen.route) {
+                    popUpTo(Screens.ImageScreen.route) { inclusive = true }
+                }
             }
-            IconButton(
-                onClick = {
-                    navController.navigate(Screens.HistoryScreen.route) {
-                        popUpTo(Screens.ImageScreen.route) { inclusive = true }
-                    }
-                },
-                modifier = Modifier
-                    .size(75.dp)
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
+            CustomIconButton(
+                icon = Icons.Rounded.History,
+                description = "Go to History",
+                modifier = Modifier.align(Alignment.TopEnd)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.History,
-                    contentDescription = "History Icon",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(35.dp)
-                        .background(Color.Black.copy(alpha = 0.3f), shape = CircleShape)
-                        .padding(5.dp)
-                )
+                navController.navigate(Screens.HistoryScreen.route) {
+                    popUpTo(Screens.ImageScreen.route) { inclusive = true }
+                }
             }
         }
 

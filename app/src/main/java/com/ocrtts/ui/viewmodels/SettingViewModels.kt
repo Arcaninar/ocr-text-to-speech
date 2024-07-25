@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : ViewModel() {
 
-    private val _langModel = MutableStateFlow("")
+    private val _langModel = MutableStateFlow("en-GB-SoniaNeural")
     val langModel: StateFlow<String> = _langModel
 
     private val _speedRate = MutableStateFlow(1.0f)
@@ -24,20 +24,20 @@ class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : 
         viewModelScope.launch {
             dataStoreManager.langModelFlow.collectLatest {
                 _langModel.value = it
-                Log.i("set", "langModel: $_langModel")
+                Log.i("set", "langModel: ${_langModel.value}")
             }
         }
         viewModelScope.launch {
             dataStoreManager.speedRateFlow.collectLatest {
                 _speedRate.value = it
 //                speedSetting = it
-                Log.i("set", "speedRate: $_speedRate")
+                Log.i("set", "speedRate: ${_speedRate.value}")
             }
         }
         viewModelScope.launch {
             dataStoreManager.modelTypeFlow.collectLatest {
                 _modelType.value = it
-                Log.i("set", "modeltype: $_modelType")
+                Log.i("set", "modeltype: ${_modelType.value}")
             }
         }
     }

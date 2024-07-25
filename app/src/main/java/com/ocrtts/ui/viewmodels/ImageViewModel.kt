@@ -1,13 +1,11 @@
 package com.ocrtts.ui.viewmodels
 
 import android.app.Application
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -29,7 +27,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 private const val TAG = "ImageViewModel"
-class ImageViewModel(application: Application, private val settingViewModel: SettingViewModel) : AndroidViewModel(application) {
+class ImageViewModel(application: Application, settingViewModel: SettingViewModel) : AndroidViewModel(application) {
     var ocrTextList = mutableStateListOf<OCRText>()
         private set
 
@@ -108,7 +106,6 @@ class ImageViewModel(application: Application, private val settingViewModel: Set
 
 
         if (text.text.isNotBlank()) {
-            Log.i(TAG, text.text)
             ocrTextList.add(text)
         }
     }

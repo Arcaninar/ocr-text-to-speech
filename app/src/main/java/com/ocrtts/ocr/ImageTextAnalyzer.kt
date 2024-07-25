@@ -135,11 +135,11 @@ object OnlineOCR {
             requests = requestList
         }
 
-        try {
-            val annotateRequest = vision.images().annotate(batchRequest)
-            annotateRequest.disableGZipContent = true
+        val annotateRequest = vision.images().annotate(batchRequest)
+        annotateRequest.disableGZipContent = true
 
-            CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
                 val responses = annotateRequest.execute()
                 val response = responses.responses.firstOrNull()
                 val text = response?.fullTextAnnotation?.text ?: ""
@@ -153,12 +153,12 @@ object OnlineOCR {
                     convertToOCRText(response, scaleFactor, onTextRecognized, isReset)
                 }
             }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing image for online text recognition: ${e.message}")
-            Log.i(TAG, "Processing image using OfflineOCR now")
-            val inputImage = InputImage.fromBitmap(bitmap, 0)
-            return OfflineOCR.analyzeOCR(inputImage, onlyDetect, scaleFactor, onTextRecognized, true)
+            catch (e: Exception) {
+                Log.e(TAG, "Error processing image for online text recognition: ${e.message}")
+                Log.i(TAG, "Processing image using OfflineOCR now")
+                val inputImage = InputImage.fromBitmap(bitmap, 0)
+                hasText = OfflineOCR.analyzeOCR(inputImage, onlyDetect, scaleFactor, onTextRecognized, true)
+            }
         }
 
         return hasText

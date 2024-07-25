@@ -13,10 +13,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModelProvider
-import com.ocrtts.base.OfflineTextSynthesis
+import androidx.lifecycle.lifecycleScope
 import com.ocrtts.base.AzureTextSynthesis
-import com.ocrtts.base.SynthesisRunnable
-import com.ocrtts.history.DataStoreManager
 import com.ocrtts.history.SettingDataStoreManager
 import com.ocrtts.ui.screens.MainScreen
 import com.ocrtts.ui.theme.OCRTextToSpeechTheme
@@ -24,21 +22,15 @@ import com.ocrtts.ui.viewmodels.ImageViewModel
 import com.ocrtts.ui.viewmodels.ImageViewModelFactory
 import com.ocrtts.ui.viewmodels.SettingViewModel
 import com.ocrtts.ui.viewmodels.SettingViewModelFactory
-import java.io.File
-import java.util.Locale
 import com.ocrtts.ui.viewmodels.TTSViewModel
 import com.ocrtts.ui.viewmodels.TTSViewModelFactory
-import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.io.File
 
 
 // temporary variables, will be moved to better place/structure
 lateinit var notificationSound: MediaPlayer
 lateinit var imageCacheFile: File
-//lateinit var speedSetting: Float
-
 
 class MainActivity : ComponentActivity() {
 

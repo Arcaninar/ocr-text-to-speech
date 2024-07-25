@@ -66,8 +66,8 @@ class TTSViewModel(
 
     fun speak(text: String, speed: Float) {
         if (isOnline && azureTTS != null) {
-            azureTTS?.stopSynthesis()
-            azureTTS?.startPlaying(text, speed)
+            azureTTS!!.stopSynthesis()
+            azureTTS!!.startPlaying(text, speed)
         } else {
             offlineTTS.speak(text)
         }
