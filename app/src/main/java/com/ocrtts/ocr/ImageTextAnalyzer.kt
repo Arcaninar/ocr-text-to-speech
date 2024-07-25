@@ -70,11 +70,14 @@ suspend fun analyzeImageOCR(viewSize: IntSize, image: Bitmap, onTextRecognized: 
     val scaleFactor = getScaleFactor(viewSize, IntSize(image.width, image.height))
 
     // do online analysis if internet is online, otherwise offline
-    val hasInternet = true
+    val TAG = "AnalyzeImageOCR"
+    val hasInternet = false
     if (hasInternet) {
+        Log.i(TAG, "Analyzing image using OnlineOCR")
         OnlineOCR.analyzeOCR(image, false, scaleFactor, onTextRecognized, false)
     }
     else {
+        Log.i(TAG, "Analyzing image using OfflineOCR")
         val inputImage = InputImage.fromBitmap(image, 0)
         OfflineOCR.analyzeOCR(inputImage, false, scaleFactor, onTextRecognized, false)
     }
@@ -133,10 +136,10 @@ object OnlineOCR {
         }
 
         try {
-            Log.i(TAG, "running onlineOCR")
             val annotateRequest = vision.images().annotate(batchRequest)
             annotateRequest.disableGZipContent = true
-            withContext(Dispatchers.IO) {
+
+            CoroutineScope(Dispatchers.IO).launch {
                 val responses = annotateRequest.execute()
                 val response = responses.responses.firstOrNull()
                 val text = response?.fullTextAnnotation?.text ?: ""
@@ -150,8 +153,10 @@ object OnlineOCR {
                     convertToOCRText(response, scaleFactor, onTextRecognized, isReset)
                 }
             }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error processing image for online text recognition: ${e.message}")
+            Log.i(TAG, "Processing image using OfflineOCR now")
             val inputImage = InputImage.fromBitmap(bitmap, 0)
             return OfflineOCR.analyzeOCR(inputImage, onlyDetect, scaleFactor, onTextRecognized, true)
         }
@@ -159,7 +164,7 @@ object OnlineOCR {
         return hasText
     }
 
-    private suspend fun convertToOCRText(response: AnnotateImageResponse?, scaleFactor: Pair<Float, Float>, onTextRecognized: (OCRText, Boolean) -> Unit, isReset: Boolean) {
+    private fun convertToOCRText(response: AnnotateImageResponse?, scaleFactor: Pair<Float, Float>, onTextRecognized: (OCRText, Boolean) -> Unit, isReset: Boolean) {
         try {
             val widthScaleFactor = scaleFactor.first
             val heightScaleFactor = scaleFactor.second
@@ -171,9 +176,9 @@ object OnlineOCR {
                 return
             }
 
-            withContext(Dispatchers.Main) {
-                for (block in fullText.blocks) {
-                    for (paragraph in block.paragraphs) {
+            for (block in fullText.blocks) {
+                for (paragraph in block.paragraphs) {
+                    CoroutineScope(Dispatchers.Main).launch {
                         val rect =
                             Rect(
                                 top = (paragraph.boundingBox.vertices[0]?.y ?: 0) * heightScaleFactor,
@@ -208,7 +213,6 @@ object OfflineOCR {
 
     suspend fun analyzeOCR(image: InputImage, onlyDetect: Boolean, scaleFactor: Pair<Float, Float> = Pair(0f, 0f), onTextRecognized: (OCRText, Boolean) -> Unit, isReset: Boolean): Boolean {
         var hasText = false
-        Log.i(TAG, "running offlineOCR")
         suspendCoroutine { continuation ->
             textRecognizer.process(image)
                 .addOnSuccessListener { visionText ->
@@ -228,6 +232,7 @@ object OfflineOCR {
                 .addOnFailureListener { e ->
                     continuation.resume(Unit)
                     Log.e(TAG, "Error processing image for offline text recognition: ${e.message}")
+                    Log.i(TAG, "Retry processing image using OfflineOCR")
                     if (!isReset) {
                         CoroutineScope(Dispatchers.Main).launch {
                             hasText = analyzeOCR(image, onlyDetect, scaleFactor, onTextRecognized, true)
@@ -264,7 +269,7 @@ object OfflineOCR {
 }
 
 private fun String.removeSpecialCharacters(): String {
-    val pattern = Regex("[^A-Za-z0-9\\p{script=Han} .,:;()\"'!?\\-+=\$%&<>*#@]")
+    val pattern = Regex("[^A-Za-z0-9\\p{script=Han} .,:;()\"'?\\-+=\$%&<>*#@]")
 
     return this.replace(pattern, "")
 }

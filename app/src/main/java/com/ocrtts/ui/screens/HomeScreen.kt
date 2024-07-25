@@ -1,5 +1,7 @@
 package com.ocrtts.ui.screens
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +25,11 @@ import com.ocrtts.R
 
 @Composable
 fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
+    val activity = LocalContext.current as Activity
+    BackHandler {
+        activity.finish()
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -96,7 +104,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 painter = painterResource(id = R.drawable.ic_debug),
                 contentDescription = "TTSTestingScreen",
                 tint = Color.White,
-                modifier = Modifier.size(30.dp))
+                modifier = Modifier.size(50.dp))
         }
 
         IconButton(
@@ -109,7 +117,7 @@ fun HomeScreen(navController: NavController, modifier: Modifier = Modifier) {
                 painter = painterResource(id = R.drawable.ic_settings),
                 contentDescription = "SettingScreen",
                 tint = Color.Yellow,
-                modifier = Modifier.size(30.dp))
+                modifier = Modifier.size(25.dp))
         }
     }
 }

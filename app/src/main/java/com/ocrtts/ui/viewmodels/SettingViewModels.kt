@@ -54,6 +54,7 @@ class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : 
         _speedRate.value = newSpeedRate
         viewModelScope.launch {
             dataStoreManager.updateSpeedRate(newSpeedRate)
+            Log.i("update", newSpeedRate.toString())
         }
     }
 
@@ -61,6 +62,7 @@ class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : 
         _modelType.value = newModelType
         viewModelScope.launch {
             dataStoreManager.updateModelType(newModelType)
+            Log.i("update", newModelType)
         }
     }
 }

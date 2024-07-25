@@ -19,17 +19,19 @@ class ImageSharedViewModel : ViewModel() {
     private val _isFromHistory = MutableStateFlow(false)
     val isFromHistory: StateFlow<Boolean> = _isFromHistory.asStateFlow()
 
+    private val _orientation = MutableStateFlow(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+    val orientation: StateFlow<Int> = _orientation.asStateFlow()
+
     var size by mutableStateOf(IntSize.Zero)
         private set
 
-    var orientation by mutableIntStateOf(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
-        private set
+    fun updateImage(image: Bitmap) { _image.value = image }
 
-    fun setImageInfo(image: Bitmap) { _image.value = image }
-
-    fun updateFromHistory(value: Boolean) { _isFromHistory.value = value}
+    fun updateImageInfo(image: Bitmap, isFromHistory: Boolean, orientation: Int) {
+        _image.value = image
+        _isFromHistory.value = isFromHistory
+        _orientation.value = orientation
+    }
 
     fun updateSize(value: IntSize) { size = value }
-
-    fun updateOrientation(value: Int) { orientation = value }
 }
