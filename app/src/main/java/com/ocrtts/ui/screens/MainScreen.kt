@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontVariation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
@@ -21,6 +22,7 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.ocrtts.history.DataStoreManager
+import com.ocrtts.history.SettingDataStoreManager
 import com.ocrtts.ocr.OfflineOCR
 import com.ocrtts.ocr.OnlineOCR
 import com.ocrtts.ui.viewmodels.ImageSharedViewModel
@@ -53,6 +55,7 @@ fun MainScreen(settingViewModel: SettingViewModel) {
     Log.i(TAG, cameraPermissionState.status.isGranted.toString())
     val context = LocalContext.current
     val dataStoreManager = remember { DataStoreManager(context) }
+    val SettingDataStoreManager = remember { SettingDataStoreManager(context) }
     val navController = rememberNavController()
     val startingScreen = if (cameraPermissionState.status.isGranted) Screens.HomeScreen else Screens.PermissionRequestScreen
     NavHost(navController = navController, startDestination = startingScreen.route) {
@@ -80,7 +83,7 @@ fun MainScreen(settingViewModel: SettingViewModel) {
                     navController = navController,
                     dataStoreManager = dataStoreManager,
                     settingViewModel = settingViewModel, // Pass settingViewModel
-                    ttsViewModel = viewModel(factory = TTSViewModelFactory(LocalContext.current, settingViewModel.langModel.collectAsState().value, settingViewModel.speedRate.collectAsState().value)) // Pass TTSViewModel with initial values
+                    ttsViewModel = viewModel(factory = TTSViewModelFactory(LocalContext.current, settingViewModel.langModel.collectAsState().value, settingViewModel.speedRate.collectAsState().value, SettingDataStoreManager)) // Pass TTSViewModel with initial values
                 )
             }
             composable(Screens.HistoryScreen.route) {

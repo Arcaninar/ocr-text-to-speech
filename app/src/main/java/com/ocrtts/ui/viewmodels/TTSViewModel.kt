@@ -4,21 +4,37 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.ocrtts.base.AzureTextSynthesis
 import com.ocrtts.base.OfflineTextSynthesis
+import com.ocrtts.history.SettingDataStoreManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import org.apache.http.TruncatedChunkException
 import java.util.Locale
 
 class TTSViewModel(
     application: Application,
     private var initialLanguage: String,
     private val initialSpeed: Float,
+    private val dataStoreManager: SettingDataStoreManager
 
-) : AndroidViewModel(application) {
+    ) : AndroidViewModel(application) {
     private val context = getApplication<Application>().applicationContext
     val offlineTTS = OfflineTextSynthesis(context)
     var azureTTS: AzureTextSynthesis? = null
     var isOnline: Boolean = false
+
+    var showDialog = mutableStateOf(false)//init
+//    val model: MutableState<String> = mutableStateOf("")
 
     init {
         isOnline = checkNetworkAvailability(context)
@@ -42,13 +58,6 @@ class TTSViewModel(
         }
     }
 
-//    init {
-//        isOnline = checkNetworkAvailability(context)
-//        if (isOnline) {
-//            azureTTS = AzureTextSynthesis(initialLanguage)
-//        }
-//    }
-
     private fun checkNetworkAvailability(context: Context): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
@@ -56,22 +65,47 @@ class TTSViewModel(
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 
-//    fun updateLanguage(language: String) {
-//        if (isOnline) {
-//            azureTTS?.updateVoice(language)
-//        }else {
-////            offlineTTS
-//        }
-//    }
-
-    fun speak(text: String, speed: Float) {
-        if (isOnline && azureTTS != null) {
-            azureTTS!!.stopSynthesis()
-            azureTTS!!.startPlaying(text, speed)
+    suspend fun speak(text: String, modelTy: String, speed: Float) {
+        if (isOnline) {
+            if (modelTy == "onlineTTS") {
+                azureTTS?.stopSynthesis()
+                azureTTS?.startPlaying(text, speed)
+            } else {
+//                azureTTS = null
+                azureTTS?.stopSynthesis()
+                offlineTTS.speak(text)
+            }
         } else {
-            offlineTTS.speak(text)
+            if (modelTy != "offlineTTS") {
+                showDialog.value = true
+                viewModelScope.launch {
+                    dataStoreManager.updateModelType("offlineTTS")
+                    Log.i("update", "auto-change to offlineTTS")
+                }
+                offlineTTS.speak(text)
+            } else {
+                offlineTTS.speak(text)
+            }
+// else still need to optimization
+            //check setting
+            //Setting UI ->offline
+            //Alert box
+            //OfflineSpeak
+
         }
     }
+
+//    suspend fun speek(settingViewModel: SettingViewModel) {
+//        model.value = settingViewModel.modelType.first()
+//    }
+//    fun speak(text: String, speed: Float) {
+//        if (isOnline && azureTTS != null) {
+//            azureTTS!!.stopSynthesis()
+//            azureTTS!!.startPlaying(text, speed)
+//        } else {
+//            offlineTTS.speak(text)
+//        }
+//    }
 
     fun stopAllTTS() {
         azureTTS?.stopSynthesis()
@@ -85,57 +119,102 @@ class TTSViewModel(
     }
 }
 
-
-// 原本想在这里设置checknetwork
-
-//package com.ocrtts.ui.viewmodels
-//
-//import android.app.AlertDialog
 //import android.app.Application
 //import android.content.Context
 //import android.net.ConnectivityManager
-//import android.net.Network
 //import android.net.NetworkCapabilities
-//import androidx.compose.material3.Button
-//import androidx.compose.material3.Text
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.DisposableEffect
-//import androidx.compose.runtime.collectAsState
-//import androidx.compose.runtime.getValue
-//import androidx.compose.ui.platform.LocalContext
 //import androidx.lifecycle.AndroidViewModel
-//import androidx.lifecycle.viewModelScope
-//import androidx.navigation.NavController
 //import com.ocrtts.base.AzureTextSynthesis
 //import com.ocrtts.base.OfflineTextSynthesis
-//import com.ocrtts.ui.screens.Screens
-//import kotlinx.coroutines.flow.MutableStateFlow
-//import kotlinx.coroutines.flow.StateFlow
+//import java.util.Locale
+//
+//import androidx.lifecycle.viewModelScope
+//import com.ocrtts.history.SettingDataStoreManager
+//import kotlinx.coroutines.flow.collectLatest
+//import kotlinx.coroutines.flow.first
 //import kotlinx.coroutines.launch
 //
 //class TTSViewModel(
 //    application: Application,
-//    private val initialLanguage: String,
-//    private val initialSpeed: Float
+////    private var initialLanguage: String,
+////    private val initialSpeed: Float,
+//    private val dataStoreManager: SettingDataStoreManager
 //
 //) : AndroidViewModel(application) {
 //    private val context = getApplication<Application>().applicationContext
-//    val offlineTTS = OfflineTextSynthesis(context)
-//    var azureTTS: AzureTextSynthesis? = null
+//    private val offlineTTS = OfflineTextSynthesis(context)
+//    private var azureTTS: AzureTextSynthesis? = null
+//    private var isOnline: Boolean = false
 //
-//    private val _isOnline = MutableStateFlow(checkNetworkAvailability(context))
-//    val isOnline: StateFlow<Boolean> = _isOnline
-//
-//    //    init {
+//    init {
 ////        isOnline = checkNetworkAvailability(context)
+//        observeSettings()
+//        setupTTS()
+//    }
+//
+//    private fun observeSettings() {
+//        viewModelScope.launch {
+//            dataStoreManager.modelTypeFlow.collectLatest { modelType ->
+//                isOnline = checkNetworkAvailability(context)
+//                val langModel = dataStoreManager.langModelFlow.first()
+//                if (isOnline) {
+//                    if (modelType == "onlineTTS") {
+//                        azureTTS = AzureTextSynthesis(langModel)
+//                    } else {
+//                        azureTTS = null
+//                        offlineTTS.setLanguage(Locale.forLanguageTag(langModel))
+//                    }
+//                } els e {
+//                    azureTTS = null
+//                    offlineTTS.setLanguage(Locale.forLanguageTag(langModel))
+//                }
+//            }
+//        }
+//    }
+//
+//
+////    private fun setupTTS() {
 ////        if (isOnline) {
-////            azureTTS = AzureTextSynthesis("zh-HK-HiuMaanNeural")
 ////            azureTTS = AzureTextSynthesis(initialLanguage)
+////        } else {
+////            offlineTTS.setLanguage(Locale.forLanguageTag(initialLanguage))
 ////        }
 ////    }
-//    init {
-//        if (_isOnline.value) {
-//            azureTTS = AzureTextSynthesis(initialLanguage)
+//
+//    private fun setupTTS() {
+//        // Initial setup based on the current network state and settings
+//        isOnline = checkNetworkAvailability(context)
+//        viewModelScope.launch {
+//            val modelType = dataStoreManager.modelTypeFlow.first()
+//            val langModel = dataStoreManager.langModelFlow.first()
+//            if (isOnline && modelType == "onlineTTS") {
+//                azureTTS = AzureTextSynthesis(langModel)
+//            } else {
+//                azureTTS = null
+//                offlineTTS.setLanguage(Locale.forLanguageTag(langModel))
+//            }
+//        }
+//    }
+//
+//
+////    fun updateLanguage(newLanguage: String) {
+////        initialLanguage = newLanguage
+////        if (isOnline) {
+////            azureTTS?.updateVoice(newLanguage)
+////        } else {
+////            offlineTTS.setLanguage(Locale.forLanguageTag(newLanguage))
+////        }
+////    }
+//
+//    fun updateLanguage(newLanguage: String) {
+//        viewModelScope.launch {
+//            if (isOnline) {
+//                val modelType = dataStoreManager.modelTypeFlow.first()
+//                if (modelType == "onlineTTS") {
+//                    azureTTS?.updateVoice(newLanguage)
+//                }
+//            }
+//            offlineTTS.setLanguage(Locale.forLanguageTag(newLanguage))
 //        }
 //    }
 //
@@ -146,22 +225,25 @@ class TTSViewModel(
 //        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
 //    }
 //
-//    fun updateLanguage(language: String) {
-//        if (isOnline.value) {
-//            azureTTS?.updateVoice(language)
-//        }else {
+////    fun speak(text: String, speed: Float) {
+////        if (isOnline && azureTTS != null) {
+////            azureTTS!!.stopSynthesis()
+////            azureTTS!!.startPlaying(text, speed)
+////        } else {
+////            offlineTTS.speak(text)
+////        }
+////    }
 //
-//            // Handle offline TTS language update if necessary
-//
-//        }
-//    }
-//
-//    fun speak(text: String, speed: Float) {
-//        if (_isOnline.value && azureTTS != null) {
-//            azureTTS?.stopSynthesis()
-//            azureTTS?.startPlaying(text, speed)
-//        } else {
-//            offlineTTS.speak(text)
+//    fun speak(text: String) {
+//        viewModelScope.launch {
+//            val speed = dataStoreManager.speedRateFlow.first()
+//            val modelType = dataStoreManager.modelTypeFlow.first()
+//            if (isOnline && modelType == "onlineTTS" && azureTTS != null) {
+//                azureTTS!!.stopSynthesis()
+//                azureTTS!!.startPlaying(text, speed)
+//            } else {
+//                offlineTTS.speak(text)
+//            }
 //        }
 //    }
 //
@@ -174,63 +256,5 @@ class TTSViewModel(
 //        super.onCleared()
 //        azureTTS?.destroy()
 //        offlineTTS.shutdown()
-//    }
-//
-//    fun setOnlineStatus(isOnline: Boolean) {
-//        viewModelScope.launch {
-//            _isOnline.emit(isOnline)
-//        }
-//    }
-//}
-//
-//@Composable
-//fun NetworkMonitor(navController: NavController, ttsViewModel: TTSViewModel, onOnlineDetected: () -> Unit) {
-//    val context = LocalContext.current
-//    val isOnline by ttsViewModel.isOnline.collectAsState()
-//
-//    DisposableEffect(Unit) {
-//        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-//        val networkCallback = object : ConnectivityManager.NetworkCallback() {
-//
-//            override fun onAvailable(network: android.net.Network) {
-//                ttsViewModel.setOnlineStatus(true)
-//                onOnlineDetected()
-//            }
-//
-//            override fun onLost(network: android.net.Network) {
-//                ttsViewModel.setOnlineStatus(false)
-//            }
-//        }
-//
-//        connectivityManager.registerDefaultNetworkCallback(networkCallback)
-//
-//        onDispose {
-//            connectivityManager.unregisterNetworkCallback(networkCallback)
-//        }
-//    }
-//
-//    if (isOnline) {
-//
-//        // Display alert box and provide options to switch TTS modes
-//        AlertDialog (
-//            onDissmissRequest = {},
-//            title = { Text("Network connection") },
-//            text = { Text("Network connection detected. Please manually switch to online Text to Speech") },
-//            confirmButton = {
-//                Button(onClick = {
-//                    navController.navigate(Screens.SettingScreen.route)
-//                }) {
-//                    Text("OK")
-//                }
-//            },
-//            dismissButton = {
-//                Button(onClick = {
-//                    //...
-//                }) {
-//                    Text("No")
-//                }
-//            }
-//        )
-//
 //    }
 //}

@@ -43,10 +43,11 @@ class ImageViewModel(application: Application, settingViewModel: SettingViewMode
     private var hasSavedImage by mutableStateOf(false)
 
     private val _isOnline = MutableStateFlow(checkNetworkAvailability(application.applicationContext))
+
     val isOnline: StateFlow<Boolean> = _isOnline
     //change1
 //    val isNetworkAvailable = MutableStateFlow(false)
-    var showDialog = mutableStateOf(false)
+    var showDialog = mutableStateOf(false)//init
 
 
     val modelType: StateFlow<String> = settingViewModel.modelType.stateIn(
@@ -62,7 +63,7 @@ class ImageViewModel(application: Application, settingViewModel: SettingViewMode
             _isOnline.collect { isOnline ->
                 modelType.collect { model ->
                     if (isOnline && model == "offlineTTS") {
-                        showDialog.value = true
+                        showDialog.value = true//show alert box here
                     } else {
                         showDialog.value = false
                     }

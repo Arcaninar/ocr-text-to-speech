@@ -109,7 +109,7 @@ fun ImageScreen(
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         Log.w(TAG, "Long press: ${viewModel.ocrTextSelected.text}")
                         // TODO: Text to Speech
-                        ttsViewModel.speak(viewModel.ocrTextSelected.text, 1.0f)
+                        ttsViewModel.speak(viewModel.ocrTextSelected.text)
 //                        azureTTS.stopSynthesis()
 //                        sAP(viewModel.ocrTextSelected.text, 1.0f, offlineTTS)
 //                        synthesizeAndPlayText(viewModel.ocrTextSelected.text, "en-US", 1.0f, AzureTextSynthesis("en-GB-SoniaNeural"))

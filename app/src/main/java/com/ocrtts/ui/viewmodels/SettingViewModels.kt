@@ -20,6 +20,8 @@ class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : 
     private val _modelType = MutableStateFlow("offlineTTS")
     val modelType: StateFlow<String> = _modelType
 
+    fun setmodeltype(){}
+
     init {
         viewModelScope.launch {
             dataStoreManager.langModelFlow.collectLatest {
@@ -60,9 +62,6 @@ class SettingViewModel(private val dataStoreManager: SettingDataStoreManager) : 
 
     fun updateModelType(newModelType: String) {
         _modelType.value = newModelType
-        viewModelScope.launch {
-            dataStoreManager.updateModelType(newModelType)
-            Log.i("update", newModelType)
-        }
+
     }
 }
