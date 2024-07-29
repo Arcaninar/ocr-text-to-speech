@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
             settingViewModel.langModel.collect { languageModel ->
                 // Ensure TTSViewModel is initialized after langModel is received
                 if (::ttsViewModel.isInitialized.not()) {
-                    val ttsFactory = TTSViewModelFactory(application, languageModel, 1.0f)
+                    val ttsFactory = TTSViewModelFactory(application, languageModel, 1.0f, settingDataStoreManager)
                     ttsViewModel = ViewModelProvider(this@MainActivity, ttsFactory)[TTSViewModel::class.java]
                 }
                 // If you need to update the language in the existing TTSViewModel

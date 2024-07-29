@@ -118,7 +118,7 @@ fun ImageScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     val speed by settingViewModel.speedRate.collectAsState()
-//    val language by settingViewModel.langModel.collectAsState()
+    val modelTy by settingViewModel.modelType.collectAsState()
     var showDialog by viewModel.showDialog
 
     // sentinel
@@ -167,7 +167,7 @@ fun ImageScreen(
                     delay(500L)
                     if (viewModel.longTouchCounter == isLongClick && hasText) {
                         // TODO: Text to Speech
-                        ttsViewModel.speak(viewModel.ocrTextSelected.text, 1.0f)
+                        ttsViewModel.speak(viewModel.ocrTextSelected.text, modelTy, speed)
                     }
                 }
 
@@ -318,8 +318,8 @@ fun ImageScreen(
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = {},
-                title = { Text("Network Available") },
-                text = { Text("Network connection detected. Please manually switch to online Text to Speech") },
+                title = { Text("Setting warnings") },
+                text = { Text("Network connection detected. Please manually switch to online TTS for a better experience.") },
                 confirmButton = {
                     Button(onClick = { navController.navigate(Screens.SettingScreen.route) }) {
                         Text("OK")
